@@ -16,7 +16,7 @@ SAMPLE_COURSE_BLUEPRINT = {
     "name": "Sandbox Links",
     "region": "Local Demo Course",
     "holes": [
-        {"number": 1, "par": 4, "yardage": 402, "fairway_aim": "Center bunkers", "hazard_summary": "Bunker right at 245, collection area left.", "tee_latitude": 37.4200, "tee_longitude": -122.0840, "green_latitude": 37.4209, "green_longitude": -122.0830},
+        {"number": 1, "par": 4, "yardage": 402, "fairway_aim": "Left-center away from the bunkers", "hazard_summary": "Bunker right at 245, collection area left.", "tee_latitude": 37.4200, "tee_longitude": -122.0840, "green_latitude": 37.4209, "green_longitude": -122.0830},
         {"number": 2, "par": 5, "yardage": 528, "fairway_aim": "Left-center to open the second shot", "hazard_summary": "Cross bunker at 285, creek guards layup zone.", "tee_latitude": 37.4211, "tee_longitude": -122.0832, "green_latitude": 37.4224, "green_longitude": -122.0825},
         {"number": 3, "par": 3, "yardage": 176, "fairway_aim": "Middle of the green", "hazard_summary": "Deep bunker short right, false front.", "tee_latitude": 37.4226, "tee_longitude": -122.0828, "green_latitude": 37.4229, "green_longitude": -122.0821},
         {"number": 4, "par": 4, "yardage": 431, "fairway_aim": "Left half of fairway", "hazard_summary": "Fairway bunker right, native area long left.", "tee_latitude": 37.4232, "tee_longitude": -122.0824, "green_latitude": 37.4241, "green_longitude": -122.0818},

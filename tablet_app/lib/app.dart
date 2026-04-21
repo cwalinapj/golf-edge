@@ -547,7 +547,7 @@ class _RoundWorkspacePageState extends State<RoundWorkspacePage> {
             if (currentHole != null) ...[
               const SizedBox(height: 16),
               Text(
-                'Hole-aware context: ${_stringOrEmpty(currentHole['fairway_aim'])}',
+                'Fairway aim: ${_stringOrEmpty(currentHole['fairway_aim'])}',
               ),
               const SizedBox(height: 8),
               Text(_stringOrEmpty(currentHole['hazard_summary'])),

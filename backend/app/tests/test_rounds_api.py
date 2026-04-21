@@ -43,6 +43,8 @@ def test_round_workspace_supports_manual_first_flow():
 
     round_response = client.post("/rounds/start", json={}).json()
     round_id = round_response["round_id"]
+    workspace = client.get(f"/rounds/{round_id}/workspace").json()
+    assert workspace["course_name"] == "Sandbox Links"
 
     controls = client.post(
         f"/rounds/{round_id}/controls",

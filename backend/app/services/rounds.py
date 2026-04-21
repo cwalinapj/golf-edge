@@ -207,7 +207,8 @@ class RoundService:
         )
         db.add(shot)
 
-        hole_state.strokes += 1
+        if self._counts_as_stroke(payload):
+            hole_state.strokes += 1
         hole_state.penalties += payload.penalties
         hole_state.putts += payload.putts
         if payload.notes:
@@ -370,6 +371,25 @@ class RoundService:
         if hole_state.status == "UPCOMING":
             hole_state.status = "ACTIVE"
         hole_state.arrival_source = source
+
+    def _counts_as_stroke(self, payload: RoundShotCreateRequest) -> bool:
+        if payload.penalties == 0:
+            return True
+
+        return any(
+            (
+                payload.club_used,
+                payload.lie,
+                payload.notes,
+                payload.tee_used,
+                payload.tee_height,
+                payload.ball_type,
+                payload.swing_type,
+                payload.target_distance is not None,
+                payload.mevo_observation_id,
+                payload.putts > 0,
+            )
+        )
 
     def _shot_response(self, shot: RoundShotModel) -> RoundShotResponse:
         return RoundShotResponse(
