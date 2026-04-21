@@ -82,6 +82,7 @@ class RoundService:
             raise ValueError("Course not found")
         hole_lookup = {hole.number: hole for hole in self.course_map_service.get_holes_for_course(db, course.id)}
         hole_states = self._get_hole_states(db, round_id)
+        hole_count = len(hole_states)
         controls = self._get_controls(db, round_id)
         recent_shots = self._get_recent_shots(db, round_id)
         latest_shot = recent_shots[0] if recent_shots else None
@@ -125,9 +126,11 @@ class RoundService:
                 message=guidance_message,
                 source=guidance_source,
                 current_hole_number=current_hole_state.hole_number,
-                next_hole_number=current_hole_state.hole_number + 1
-                if current_hole_state.hole_number < len(hole_states)
-                else None,
+                next_hole_number=(
+                    current_hole_state.hole_number + 1
+                    if current_hole_state.hole_number < hole_count
+                    else None
+                ),
             ),
             summary=RoundSummaryResponse(
                 total_strokes=sum(hole_state.strokes for hole_state in hole_states),
@@ -263,9 +266,10 @@ class RoundService:
     def complete_hole(self, db: Session, round_id: str, hole_number: int) -> RoundResponse:
         round_model = self._get_round(db, round_id)
         hole_state = self._get_target_hole_state(db, round_model, hole_number)
+        total_holes = len(self._get_hole_states(db, round_id))
         hole_state.status = "HOLE_COMPLETE"
         db.add(hole_state)
-        if hole_number >= 18:
+        if hole_number >= total_holes:
             round_model.status = "COMPLETED"
             round_model.current_hole_status = "ROUND_COMPLETE"
             round_model.completed_at = datetime.now(timezone.utc)

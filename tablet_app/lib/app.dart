@@ -271,10 +271,11 @@ class _RoundWorkspacePageState extends State<RoundWorkspacePage> {
 
   Future<void> _completeHole() async {
     if (_roundId == null) return;
+    final completedHoleNumber = _currentHoleNumber;
 
-    await _apiClient.postJson('/rounds/$_roundId/holes/$_currentHoleNumber/complete');
+    await _apiClient.postJson('/rounds/$_roundId/holes/$completedHoleNumber/complete');
     await _refreshWorkspace();
-    _showMessage('Hole $_currentHoleNumber marked complete.');
+    _showMessage('Hole $completedHoleNumber marked complete.');
   }
 
   Map<String, dynamic>? _findHole(int holeNumber) {
@@ -522,7 +523,7 @@ class _RoundWorkspacePageState extends State<RoundWorkspacePage> {
               minLines: 2,
               maxLines: 4,
               decoration: const InputDecoration(
-                labelText: 'Round notes',
+                labelText: 'Shot notes',
                 border: OutlineInputBorder(),
               ),
             ),

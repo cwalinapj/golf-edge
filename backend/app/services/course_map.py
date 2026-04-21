@@ -106,9 +106,9 @@ class CourseMapService:
         observation: MevoObservationModel | None,
     ) -> tuple[str, str]:
         if latest_shot and observation and observation.offline is not None and observation.carry is not None:
-            lateral_bias = "left" if observation.offline < 0 else "right"
+            finish_direction = "left" if observation.offline < 0 else "right"
             message = (
-                f"Favor the {lateral_bias} rough edge on hole {hole.number}; "
+                f"Favor the {finish_direction} rough edge on hole {hole.number}; "
                 f"flight finished about {abs(int(observation.offline))} yards offline "
                 f"with {int(observation.carry)} yards of carry."
             )
