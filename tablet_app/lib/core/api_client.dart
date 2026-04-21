@@ -27,10 +27,27 @@ class ApiClient {
   }
 
   Map<String, dynamic> _decodeResponse(http.Response response) {
+    if (response.statusCode < 200 || response.statusCode >= 300) {
+      throw ApiClientException(
+        'Request failed with status ${response.statusCode}: ${response.body}',
+      );
+    }
+
     final decoded = jsonDecode(response.body);
     if (decoded is Map<String, dynamic>) {
       return decoded;
     }
-    throw const FormatException('Expected a JSON object response');
+    throw ApiClientException(
+      'Expected a JSON object response but received: ${response.body}',
+    );
   }
+}
+
+class ApiClientException implements Exception {
+  const ApiClientException(this.message);
+
+  final String message;
+
+  @override
+  String toString() => 'ApiClientException: $message';
 }
