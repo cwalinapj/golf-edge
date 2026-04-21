@@ -511,7 +511,7 @@ class _RoundWorkspacePageState extends State<RoundWorkspacePage> {
                 _LabeledField(label: 'Ball type', controller: _shotBallTypeController),
                 _LabeledField(label: 'Swing type', controller: _shotSwingTypeController),
                 _LabeledField(
-                  label: 'Radar to ball',
+                  label: 'Target distance',
                   controller: _shotTargetDistanceController,
                   keyboardType: const TextInputType.numberWithOptions(decimal: true),
                 ),

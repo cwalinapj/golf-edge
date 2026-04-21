@@ -105,7 +105,7 @@ class CourseMapService:
         latest_shot: RoundShotModel | None,
         observation: MevoObservationModel | None,
     ) -> tuple[str, str]:
-        if latest_shot and observation and observation.offline is not None and observation.carry is not None:
+        if latest_shot and self._has_valid_mevo_data(observation):
             finish_direction = "left" if observation.offline < 0 else "right"
             message = (
                 f"Favor the {finish_direction} rough edge on hole {hole.number}; "
@@ -148,3 +148,10 @@ class CourseMapService:
         target_longitude: float,
     ) -> float:
         return ((latitude - target_latitude) ** 2) + ((longitude - target_longitude) ** 2)
+
+    def _has_valid_mevo_data(self, observation: MevoObservationModel | None) -> bool:
+        return (
+            observation is not None
+            and observation.offline is not None
+            and observation.carry is not None
+        )
