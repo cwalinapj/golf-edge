@@ -435,7 +435,7 @@ class _RoundWorkspacePageState extends State<RoundWorkspacePage> {
                     dense: true,
                     contentPadding: EdgeInsets.zero,
                     title: Text(
-                      'Hole ${shot['hole_number']} · Shot ${shot['sequence_number']} · ${_stringOrEmpty(shot['club_used'], fallback: 'Manual')}',
+                      'Hole ${shot['hole_number']} · Shot ${shot['sequence_number']} · ${_stringOrEmpty(shot['club_used'], fallback: 'manual')}',
                     ),
                     subtitle: Text(
                       'Lie ${_stringOrEmpty(shot['lie'], fallback: 'n/a')} · Putts ${shot['putts']} · Penalties ${shot['penalties']}',
