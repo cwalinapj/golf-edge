@@ -29,7 +29,7 @@ class ApiClient {
   Map<String, dynamic> _decodeResponse(http.Response response) {
     if (response.statusCode < 200 || response.statusCode >= 300) {
       throw ApiClientException(
-        'Request failed with status ${response.statusCode}: ${response.body}',
+        'Request failed with status ${response.statusCode}: ${_summarizeBody(response.body)}',
       );
     }
 
@@ -38,8 +38,16 @@ class ApiClient {
       return decoded;
     }
     throw ApiClientException(
-      'Expected a JSON object response but received: ${response.body}',
+      'Expected a JSON object response but received: ${_summarizeBody(response.body)}',
     );
+  }
+
+  String _summarizeBody(String body) {
+    const maxLength = 200;
+    if (body.length <= maxLength) {
+      return body;
+    }
+    return '${body.substring(0, maxLength)}...';
   }
 }
 
