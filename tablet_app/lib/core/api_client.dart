@@ -1,0 +1,61 @@
+import 'dart:convert';
+
+import 'package:http/http.dart' as http;
+
+class ApiClient {
+  ApiClient({required this.baseUrl, http.Client? client})
+      : _client = client ?? http.Client();
+
+  final String baseUrl;
+  final http.Client _client;
+
+  Future<Map<String, dynamic>> getJson(String path) async {
+    final response = await _client.get(Uri.parse('$baseUrl$path'));
+    return _decodeResponse(response);
+  }
+
+  Future<Map<String, dynamic>> postJson(
+    String path, {
+    Map<String, dynamic>? body,
+  }) async {
+    final response = await _client.post(
+      Uri.parse('$baseUrl$path'),
+      headers: const {'Content-Type': 'application/json'},
+      body: jsonEncode(body ?? <String, dynamic>{}),
+    );
+    return _decodeResponse(response);
+  }
+
+  Map<String, dynamic> _decodeResponse(http.Response response) {
+    if (response.statusCode < 200 || response.statusCode >= 300) {
+      throw ApiClientException(
+        'Request failed with status ${response.statusCode}: ${_summarizeBody(response.body)}',
+      );
+    }
+
+    final decoded = jsonDecode(response.body);
+    if (decoded is Map<String, dynamic>) {
+      return decoded;
+    }
+    throw ApiClientException(
+      'Expected a JSON object response but received: ${_summarizeBody(response.body)}',
+    );
+  }
+
+  String _summarizeBody(String body) {
+    const maxLength = 200;
+    if (body.length <= maxLength) {
+      return body;
+    }
+    return '${body.substring(0, maxLength)}...';
+  }
+}
+
+class ApiClientException implements Exception {
+  const ApiClientException(this.message);
+
+  final String message;
+
+  @override
+  String toString() => 'ApiClientException: $message';
+}
