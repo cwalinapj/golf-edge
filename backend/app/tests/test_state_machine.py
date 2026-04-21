@@ -1,0 +1,11 @@
+VALID_TRANSITIONS = {
+    "DRAFT": {"ARMED", "MEVO_RECEIVED"},
+    "ARMED": {"MEVO_RECEIVED"},
+    "MEVO_RECEIVED": {"OAK_ATTACHED", "FINALIZED"},
+    "OAK_ATTACHED": {"FINALIZED"},
+    "FINALIZED": {"RECONCILED_WITH_ARCCOS"},
+}
+
+
+def test_valid_transition_from_draft():
+    assert "MEVO_RECEIVED" in VALID_TRANSITIONS["DRAFT"]
