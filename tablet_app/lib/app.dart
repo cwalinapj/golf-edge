@@ -266,7 +266,7 @@ class _RoundWorkspacePageState extends State<RoundWorkspacePage> {
       },
     );
     await _refreshWorkspace();
-    _showMessage('Foreground GPS moved the workspace to hole ${nextHole['hole_number']}.');
+    _showMessage('GPS moved the workspace to hole ${nextHole['hole_number']}.');
   }
 
   Future<void> _completeHole() async {
