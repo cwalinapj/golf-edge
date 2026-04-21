@@ -373,7 +373,7 @@ class RoundService:
         hole_state.arrival_source = source
 
     def _counts_as_stroke(self, payload: RoundShotCreateRequest) -> bool:
-        """Count a stroke unless the entry is penalty-only metadata."""
+        """Count a stroke for normal entries, but keep penalty-only updates from adding one."""
         if payload.penalties == 0:
             return True
 
