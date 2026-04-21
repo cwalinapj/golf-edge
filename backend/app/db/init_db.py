@@ -5,6 +5,13 @@ from backend.app.models.mevo_observation import MevoObservationModel
 from backend.app.models.session import SessionModel
 from backend.app.models.swing_event import SwingEventModel
 
+MODELS = (
+    EnvironmentSampleModel,
+    MevoObservationModel,
+    SessionModel,
+    SwingEventModel,
+)
+
 
 def init_db() -> None:
     Base.metadata.create_all(bind=engine)
