@@ -7,8 +7,15 @@ import android.content.Intent
 import android.content.IntentFilter
 import android.content.pm.PackageManager
 import android.location.LocationManager
+import android.net.ConnectivityManager
+import android.net.Network
+import android.net.NetworkCapabilities
+import android.net.NetworkRequest
 import android.net.wifi.ScanResult
+import android.net.wifi.WifiConfiguration
 import android.net.wifi.WifiManager
+import android.net.wifi.WifiNetworkSpecifier
+import android.net.wifi.WifiNetworkSuggestion
 import android.os.Build
 import android.os.Bundle
 import android.os.Handler
@@ -20,11 +27,14 @@ import io.flutter.plugin.common.MethodChannel
 
 class MainActivity : FlutterActivity() {
     private val channelName = "rail_golf/wifi_scan"
+    private val controllerWifiChannelName = "rail_golf/controller_wifi"
     private val permissionRequestCode = 4401
     private val handler = Handler(Looper.getMainLooper())
 
     private var pendingScanResult: MethodChannel.Result? = null
     private var scanReceiver: BroadcastReceiver? = null
+    private var pendingControllerResult: MethodChannel.Result? = null
+    private var controllerNetworkCallback: ConnectivityManager.NetworkCallback? = null
 
     override fun configureFlutterEngine(flutterEngine: FlutterEngine) {
         super.configureFlutterEngine(flutterEngine)
@@ -36,6 +46,13 @@ class MainActivity : FlutterActivity() {
                     else -> result.notImplemented()
                 }
             }
+        MethodChannel(flutterEngine.dartExecutor.binaryMessenger, controllerWifiChannelName)
+            .setMethodCallHandler { call, result ->
+                when (call.method) {
+                    "saveControllerNetwork" -> saveControllerNetwork(call, result)
+                    else -> result.notImplemented()
+                }
+            }
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -44,7 +61,9 @@ class MainActivity : FlutterActivity() {
 
     override fun onDestroy() {
         unregisterScanReceiver()
+        clearControllerNetworkCallback()
         pendingScanResult = null
+        pendingControllerResult = null
         super.onDestroy()
     }
 
@@ -183,6 +202,124 @@ class MainActivity : FlutterActivity() {
         return capabilities.contains("WEP") ||
             capabilities.contains("WPA") ||
             capabilities.contains("SAE")
+    }
+
+    private fun saveControllerNetwork(call: MethodCall, result: MethodChannel.Result) {
+        val ssid = call.argument<String>("ssid").orEmpty()
+        val password = call.argument<String>("password").orEmpty()
+        if (pendingControllerResult != null) {
+            result.error("controller_connect_in_progress", "Already connecting to the controller", null)
+            return
+        }
+        if (ssid.isBlank()) {
+            result.error("controller_ssid_required", "Enter the controller network name", null)
+            return
+        }
+        if (password.length < 8) {
+            result.error("controller_password_invalid", "Password must be at least 8 characters", null)
+            return
+        }
+
+        val wifiManager =
+            applicationContext.getSystemService(Context.WIFI_SERVICE) as WifiManager
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+            saveControllerSuggestion(wifiManager, ssid, password)
+
+            val connectivityManager =
+                getSystemService(Context.CONNECTIVITY_SERVICE) as ConnectivityManager
+            val specifier = WifiNetworkSpecifier.Builder()
+                .setSsid(ssid)
+                .setWpa2Passphrase(password)
+                .build()
+            val request = NetworkRequest.Builder()
+                .addTransportType(NetworkCapabilities.TRANSPORT_WIFI)
+                .setNetworkSpecifier(specifier)
+                .build()
+            val callback = object : ConnectivityManager.NetworkCallback() {
+                override fun onAvailable(network: Network) {
+                    handler.post {
+                        val pending = pendingControllerResult ?: return@post
+                        pendingControllerResult = null
+                        connectivityManager.bindProcessToNetwork(network)
+                        pending.success(null)
+                    }
+                }
+
+                override fun onUnavailable() {
+                    handler.post {
+                        val pending = pendingControllerResult ?: return@post
+                        clearControllerNetworkCallback()
+                        pendingControllerResult = null
+                        pending.error(
+                            "controller_unavailable",
+                            "Rail Golf Controller network was not available. Check wlan1 and the password.",
+                            null
+                        )
+                    }
+                }
+            }
+
+            pendingControllerResult = result
+            controllerNetworkCallback = callback
+            connectivityManager.requestNetwork(request, callback)
+            handler.postDelayed({
+                val pending = pendingControllerResult ?: return@postDelayed
+                clearControllerNetworkCallback()
+                pendingControllerResult = null
+                pending.error(
+                    "controller_timeout",
+                    "Timed out connecting to the Rail Golf Controller network",
+                    null
+                )
+            }, 30_000)
+            return
+        }
+
+        @Suppress("DEPRECATION")
+        val config = WifiConfiguration().apply {
+            SSID = "\"$ssid\""
+            preSharedKey = "\"$password\""
+            allowedKeyManagement.set(WifiConfiguration.KeyMgmt.WPA_PSK)
+        }
+        @Suppress("DEPRECATION")
+        val networkId = wifiManager.addNetwork(config)
+        if (networkId == -1) {
+            result.error(
+                "controller_network_not_saved",
+                "Android could not save the Rail Golf Controller network",
+                null
+            )
+            return
+        }
+        @Suppress("DEPRECATION")
+        wifiManager.enableNetwork(networkId, true)
+        @Suppress("DEPRECATION")
+        wifiManager.reconnect()
+        result.success(null)
+    }
+
+    private fun saveControllerSuggestion(
+        wifiManager: WifiManager,
+        ssid: String,
+        password: String
+    ) {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+            val suggestion = WifiNetworkSuggestion.Builder()
+                .setSsid(ssid)
+                .setWpa2Passphrase(password)
+                .setIsAppInteractionRequired(false)
+                .build()
+            wifiManager.removeNetworkSuggestions(listOf(suggestion))
+            wifiManager.addNetworkSuggestions(listOf(suggestion))
+        }
+    }
+
+    private fun clearControllerNetworkCallback() {
+        val callback = controllerNetworkCallback ?: return
+        val connectivityManager =
+            getSystemService(Context.CONNECTIVITY_SERVICE) as ConnectivityManager
+        runCatching { connectivityManager.unregisterNetworkCallback(callback) }
+        controllerNetworkCallback = null
     }
 
     private fun requiredPermissions(): Array<String> {

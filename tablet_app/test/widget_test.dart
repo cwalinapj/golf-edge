@@ -51,7 +51,8 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.text('Guest'), findsOneWidget);
-    expect(find.text('Find Launch Monitor'), findsOneWidget);
+    expect(find.text('Connect to Rail Golf Controller'), findsOneWidget);
+    expect(find.text('Find Launch Monitor'), findsNothing);
   });
 
   testWidgets('selecting a launch monitor replaces scan with connect',

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import 'controller_setup_screen.dart';
 import 'core/api_client.dart';
 import 'core/models.dart';
 import 'core/wallet_user.dart';
@@ -86,28 +87,61 @@ class WifiSetupHost extends StatelessWidget {
   Widget build(BuildContext context) {
     return Scaffold(
       body: SafeArea(
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            Padding(
-              padding: const EdgeInsets.fromLTRB(20, 18, 20, 0),
-              child: Row(
-                children: [
-                  const Icon(Icons.sports_golf, size: 34),
-                  const SizedBox(width: 12),
-                  const Text(
-                    'Rail Golf',
-                    style: TextStyle(fontSize: 28, fontWeight: FontWeight.w700),
-                  ),
-                  const Spacer(),
-                  _WalletChip(user: walletUser, onSignOut: onSignOut),
-                ],
-              ),
-            ),
-            const Expanded(child: WifiSetupScreen()),
-          ],
+        child: _WifiSetupFlow(
+          walletUser: walletUser,
+          onSignOut: onSignOut,
         ),
       ),
+    );
+  }
+}
+
+class _WifiSetupFlow extends StatefulWidget {
+  const _WifiSetupFlow({
+    required this.walletUser,
+    required this.onSignOut,
+  });
+
+  final WalletUser walletUser;
+  final VoidCallback onSignOut;
+
+  @override
+  State<_WifiSetupFlow> createState() => _WifiSetupFlowState();
+}
+
+class _WifiSetupFlowState extends State<_WifiSetupFlow> {
+  bool _controllerConnected = false;
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        Padding(
+          padding: const EdgeInsets.fromLTRB(20, 18, 20, 0),
+          child: Row(
+            children: [
+              const Icon(Icons.sports_golf, size: 34),
+              const SizedBox(width: 12),
+              const Text(
+                'Rail Golf',
+                style: TextStyle(fontSize: 28, fontWeight: FontWeight.w700),
+              ),
+              const Spacer(),
+              _WalletChip(user: widget.walletUser, onSignOut: widget.onSignOut),
+            ],
+          ),
+        ),
+        Expanded(
+          child: _controllerConnected
+              ? const WifiSetupScreen()
+              : ControllerSetupScreen(
+                  onConnected: () {
+                    setState(() => _controllerConnected = true);
+                  },
+                ),
+        ),
+      ],
     );
   }
 }
