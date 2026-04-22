@@ -6,6 +6,8 @@ class ApiClient {
   ApiClient({required this.baseUrl, http.Client? client})
       : _client = client ?? http.Client();
 
+  static const requestTimeout = Duration(seconds: 45);
+
   final String baseUrl;
   final http.Client _client;
 
@@ -126,7 +128,8 @@ class ApiClient {
   }
 
   Future<Map<String, dynamic>> getJson(String path) async {
-    final response = await _client.get(Uri.parse('$baseUrl$path'));
+    final response =
+        await _client.get(Uri.parse('$baseUrl$path')).timeout(requestTimeout);
     return _decodeResponse(response);
   }
 
@@ -134,11 +137,13 @@ class ApiClient {
     String path, {
     Map<String, dynamic>? body,
   }) async {
-    final response = await _client.post(
-      Uri.parse('$baseUrl$path'),
-      headers: const {'Content-Type': 'application/json'},
-      body: jsonEncode(body ?? <String, dynamic>{}),
-    );
+    final response = await _client
+        .post(
+          Uri.parse('$baseUrl$path'),
+          headers: const {'Content-Type': 'application/json'},
+          body: jsonEncode(body ?? <String, dynamic>{}),
+        )
+        .timeout(requestTimeout);
     return _decodeResponse(response);
   }
 

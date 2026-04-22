@@ -47,7 +47,7 @@ class _WifiSetupScreenState extends State<WifiSetupScreen> {
   Future<void> _scan() async {
     setState(() {
       _scanning = true;
-      _status = null;
+      _status = 'Scanning through Rail Golf Controller...';
     });
 
     try {

@@ -26,7 +26,6 @@ class _ControllerSetupScreenState extends State<ControllerSetupScreen> {
   bool _busy = false;
   bool _scanning = false;
   bool _showPassword = false;
-  WifiNetwork? _controllerNetwork;
   String? _status;
 
   @override
@@ -40,7 +39,6 @@ class _ControllerSetupScreenState extends State<ControllerSetupScreen> {
     setState(() {
       _scanning = true;
       _status = 'Scanning for Rail Golf Controller...';
-      _controllerNetwork = null;
     });
 
     try {
@@ -62,7 +60,6 @@ class _ControllerSetupScreenState extends State<ControllerSetupScreen> {
 
       final best = matches.first;
       setState(() {
-        _controllerNetwork = best;
         _ssidController.text = best.ssid;
         _status = 'Found ${best.ssid} on ${best.band}.';
       });
@@ -81,17 +78,8 @@ class _ControllerSetupScreenState extends State<ControllerSetupScreen> {
   Future<void> _connect() async {
     final ssid = _ssidController.text.trim();
     final password = _passwordController.text;
-    final controllerNetwork = _controllerNetwork;
     if (ssid.isEmpty) {
       setState(() => _status = 'Enter the controller network name.');
-      return;
-    }
-    if (controllerNetwork == null ||
-        controllerNetwork.ssid.toLowerCase() != ssid.toLowerCase()) {
-      setState(
-        () => _status =
-            'Scan and select the Rail Golf Controller before connecting.',
-      );
       return;
     }
     if (password.length < 8) {
@@ -135,6 +123,8 @@ class _ControllerSetupScreenState extends State<ControllerSetupScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final canConnect = _ssidController.text.trim().isNotEmpty &&
+        _passwordController.text.length >= 8;
     return Padding(
       padding: const EdgeInsets.all(20),
       child: Center(
@@ -209,9 +199,8 @@ class _ControllerSetupScreenState extends State<ControllerSetupScreen> {
                 ],
                 const SizedBox(height: 18),
                 FilledButton.icon(
-                  onPressed: _busy || _scanning || _controllerNetwork == null
-                      ? null
-                      : _connect,
+                  onPressed:
+                      _busy || _scanning || !canConnect ? null : _connect,
                   icon: _busy
                       ? const SizedBox.square(
                           dimension: 18,
