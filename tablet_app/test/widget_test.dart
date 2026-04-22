@@ -18,14 +18,12 @@ void main() {
     });
   });
 
-  testWidgets('renders the Wi-Fi setup shell', (tester) async {
+  testWidgets('always renders the wallet gate on app launch', (tester) async {
     await tester.pumpWidget(const RailGolfApp());
     await tester.pumpAndSettle();
 
-    expect(find.text('Rail Golf'), findsOneWidget);
-    expect(find.text('Find Launch Monitor'), findsOneWidget);
-    expect(find.text('Connect'), findsNothing);
-    expect(find.text('Scan'), findsOneWidget);
+    expect(find.text('Welcome'), findsOneWidget);
+    expect(find.text('Find Launch Monitor'), findsNothing);
   });
 
   testWidgets('renders the wallet gate when no user is connected',

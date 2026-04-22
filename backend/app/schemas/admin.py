@@ -10,6 +10,18 @@ class Wlan0DhcpRequest(BaseModel):
     interface: str = "wlan0"
 
 
+class Wlan1SetupApRequest(BaseModel):
+    interface: str = "wlan1"
+    ssid: str = "railgolf"
+    password: str = "password"
+    connection_name: str = "railgolf-setup-ap"
+
+
+class Wlan1BridgeProxyRequest(BaseModel):
+    interface: str = "wlan1"
+    setup_connection_name: str = "railgolf-setup-ap"
+
+
 class AdminWifiNetwork(BaseModel):
     ssid: str
     bssid: str

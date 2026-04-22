@@ -43,6 +43,108 @@ class AdminNetworkManager:
             )
         )
 
+    def wlan1_setup_ap_up(
+        self,
+        *,
+        interface: str = "wlan1",
+        ssid: str = "railgolf",
+        password: str = "password",
+        connection_name: str = "railgolf-setup-ap",
+    ) -> AdminNetworkResult:
+        if len(password) < 8:
+            return AdminNetworkResult(
+                status="failed",
+                detail="Setup AP password must be at least 8 characters.",
+            )
+        nmcli = self._nmcli()
+        if nmcli is None:
+            return AdminNetworkResult(
+                status="unavailable",
+                detail="NetworkManager nmcli is not available on this host.",
+            )
+
+        if not self._connection_exists(nmcli, connection_name):
+            add = self._run(
+                [
+                    nmcli,
+                    "connection",
+                    "add",
+                    "type",
+                    "wifi",
+                    "ifname",
+                    interface,
+                    "con-name",
+                    connection_name,
+                    "autoconnect",
+                    "yes",
+                    "ssid",
+                    ssid,
+                ],
+            )
+            if add.returncode != 0:
+                return self._failed(add, "Could not create wlan1 setup AP.")
+
+        modify = self._run(
+            [
+                nmcli,
+                "connection",
+                "modify",
+                connection_name,
+                "connection.interface-name",
+                interface,
+                "connection.autoconnect",
+                "yes",
+                "802-11-wireless.ssid",
+                ssid,
+                "802-11-wireless.mode",
+                "ap",
+                "802-11-wireless.band",
+                "bg",
+                "wifi-sec.key-mgmt",
+                "wpa-psk",
+                "wifi-sec.psk",
+                password,
+                "ipv4.method",
+                "shared",
+                "ipv6.method",
+                "ignore",
+            ],
+        )
+        if modify.returncode != 0:
+            return self._failed(modify, "Could not configure wlan1 setup AP.")
+
+        up = self._run([nmcli, "connection", "up", connection_name], timeout=30)
+        if up.returncode != 0:
+            return self._failed(up, "Could not activate wlan1 setup AP.")
+
+        return AdminNetworkResult(
+            status="wlan1_setup_ap",
+            detail=f"Setup AP {ssid} is active on {interface}.",
+        )
+
+    def wlan1_bridge_proxy_up(
+        self,
+        *,
+        interface: str = "wlan1",
+        setup_connection_name: str = "railgolf-setup-ap",
+    ) -> AdminNetworkResult:
+        nmcli = self._nmcli()
+        if nmcli is None:
+            return AdminNetworkResult(
+                status="unavailable",
+                detail="NetworkManager nmcli is not available on this host.",
+            )
+
+        self._run([nmcli, "connection", "down", setup_connection_name])
+        self._run([nmcli, "device", "set", interface, "managed", "yes"])
+        link = self._run(["ip", "link", "set", interface, "up"])
+        if link.returncode != 0:
+            return self._failed(link, f"Could not bring {interface} up for bridge/proxy mode.")
+        return AdminNetworkResult(
+            status="wlan1_bridge_proxy",
+            detail=f"{interface} is ready for bridge/proxy mode.",
+        )
+
     def wlan0_dhcp_up(self, *, interface: str = "wlan0") -> AdminNetworkResult:
         nmcli = self._nmcli()
         if nmcli is None:
@@ -172,6 +274,10 @@ class AdminNetworkManager:
 
     def _nmcli(self) -> str | None:
         return shutil.which("nmcli")
+
+    def _connection_exists(self, nmcli: str, connection_name: str) -> bool:
+        completed = self._run([nmcli, "-t", "-f", "NAME", "connection", "show"])
+        return connection_name in completed.stdout.splitlines()
 
     def _run(self, command: list[str], *, timeout: int = 15) -> subprocess.CompletedProcess[str]:
         return subprocess.run(

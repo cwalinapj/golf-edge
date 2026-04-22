@@ -21,22 +21,11 @@ class RailGolfApp extends StatefulWidget {
 class _RailGolfAppState extends State<RailGolfApp> {
   final _walletStore = WalletUserStore();
   WalletUser? _walletUser;
-  bool _loadingWallet = true;
 
   @override
   void initState() {
     super.initState();
-    _loadWalletUser();
-  }
-
-  Future<void> _loadWalletUser() async {
-    final user = await _walletStore.load();
-    if (mounted) {
-      setState(() {
-        _walletUser = user;
-        _loadingWallet = false;
-      });
-    }
+    _walletStore.clear();
   }
 
   Future<void> _setWalletUser(WalletUser user) async {
@@ -67,21 +56,18 @@ class _RailGolfAppState extends State<RailGolfApp> {
         ),
         scaffoldBackgroundColor: const Color(0xff101613),
       ),
-      home: _loadingWallet
-          ? const _AppLoadingScreen()
-          : walletUser == null
-              ? WalletConnectGate(
-                  onConnected: _setWalletUser,
-                  onGuest: () =>
-                      setState(() => _walletUser = WalletUser.guest()),
-                )
-              : WalletUserScope(
-                  user: walletUser,
-                  child: WifiSetupHost(
-                    walletUser: walletUser,
-                    onSignOut: _clearWalletUser,
-                  ),
-                ),
+      home: walletUser == null
+          ? WalletConnectGate(
+              onConnected: _setWalletUser,
+              onGuest: () => setState(() => _walletUser = WalletUser.guest()),
+            )
+          : WalletUserScope(
+              user: walletUser,
+              child: WifiSetupHost(
+                walletUser: walletUser,
+                onSignOut: _clearWalletUser,
+              ),
+            ),
     );
   }
 }
@@ -122,17 +108,6 @@ class WifiSetupHost extends StatelessWidget {
           ],
         ),
       ),
-    );
-  }
-}
-
-class _AppLoadingScreen extends StatelessWidget {
-  const _AppLoadingScreen();
-
-  @override
-  Widget build(BuildContext context) {
-    return const Scaffold(
-      body: Center(child: CircularProgressIndicator()),
     );
   }
 }
