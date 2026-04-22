@@ -76,7 +76,17 @@ it does not inspect AccessibilityService nodes directly.
 
 Target folder:
 
-- `lib/features/fsgolf_control/`
+- `lib/features/fsgolf_control/ui/`
+- `lib/features/fsgolf_control/viewmodel/`
+- `lib/features/fsgolf_control/actions/`
+
+Responsibilities:
+
+- `ui/`: FS Golf control screens, buttons, and status display.
+- `viewmodel/`: screen state, action enablement, and orchestration calls.
+- `actions/`: named FS Golf commands such as outdoor mode, indoor mode, start
+  session, radar adjustment, back, and connect radar. These call the
+  `core-accessibility` facade and do not depend on native service internals.
 
 ### feature-recipes
 
