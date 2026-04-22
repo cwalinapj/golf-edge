@@ -3,16 +3,18 @@ package com.railgolf.app
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
-import com.railgolf.app.di.AppModule
-import com.railgolf.app.navigation.AppNavGraph
-import com.railgolf.core.ui.theme.RailGolfTheme
+import androidx.compose.material3.Text
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Surface
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContent {
-            RailGolfTheme {
-                AppNavGraph(appModule = AppModule)
+            MaterialTheme {
+                Surface {
+                    Text("Rail Golf")
+                }
             }
         }
     }

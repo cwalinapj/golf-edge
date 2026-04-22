@@ -23,6 +23,7 @@ android {
 }
 
 dependencies {
-    implementation("androidx.compose.material3:material3:1.3.2")
-    implementation("androidx.compose.ui:ui:1.7.8")
+    implementation(platform(libs.androidx.compose.bom))
+    implementation(libs.androidx.compose.material3)
+    implementation(libs.androidx.compose.ui)
 }
