@@ -38,3 +38,7 @@ flutter run --dart-define=RAIL_GOLF_API_BASE_URL=http://192.168.4.1:8000
 ```
 
 The default API URL is `http://192.168.4.1:8000`, the Pi address on the `railgolf` controller AP. For emulator development against a backend on the development machine, override it with `--dart-define=RAIL_GOLF_API_BASE_URL=http://10.0.2.2:8000`.
+
+Launch monitor scan and bind requests are routed through the Pi API to the ESP32
+control endpoint on the Pi's `eth1` transport. Override the ESP32 control URL on
+the Pi with `ESP32_CONTROL_URL` if firmware uses a different USB-NCM address.

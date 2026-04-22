@@ -140,11 +140,10 @@ class _WifiSetupScreenState extends State<WifiSetupScreen> {
       if (response['connected'] != true) {
         throw ApiClientException(
           response['detail'] as String? ??
-              'Pi could not reach the launch monitor from the controller bridge.',
+              'Pi could not bind the ESP32 to the launch monitor.',
         );
       }
-      setState(() =>
-          _status = 'Pi found ${savedBinding.ssid} from the controller bridge');
+      setState(() => _status = 'ESP32 connected to ${savedBinding.ssid}');
     } catch (error) {
       setState(() => _status = _friendlyError(error));
     } finally {

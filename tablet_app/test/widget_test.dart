@@ -151,7 +151,7 @@ class _FakeApiClient extends ApiClient {
     required String passphrase,
     required String capabilities,
     required String ownerKey,
-    String stationInterface = 'wlan1',
+    String stationInterface = 'eth1',
     bool keepConnected = true,
   }) async {
     boundSsid = ssid;

@@ -18,7 +18,7 @@ class LaunchMonitorBindingRequest(BaseModel):
     passphrase: str
     capabilities: str = ""
     owner_key: str
-    station_interface: str = "wlan1"
+    station_interface: str = "eth1"
     keep_connected: bool = True
 
 

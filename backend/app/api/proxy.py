@@ -28,9 +28,8 @@ def proxy_status():
 @router.get("/launch-monitor/scan", response_model=LaunchMonitorScanResponse)
 def scan_launch_monitors(
     station_interface: str = "eth1",
-    subnet: str = "192.168.2.0/24",
 ):
-    result = network_manager.scan(station_interface=station_interface, subnet=subnet)
+    result = network_manager.scan(station_interface=station_interface)
     return LaunchMonitorScanResponse(
         station_interface=station_interface,
         networks=[

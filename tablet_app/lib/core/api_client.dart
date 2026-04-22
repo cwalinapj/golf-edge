@@ -23,11 +23,9 @@ class ApiClient {
 
   Future<Map<String, dynamic>> scanLaunchMonitors({
     String stationInterface = 'eth1',
-    String subnet = '192.168.2.0/24',
   }) {
     final query = Uri(queryParameters: <String, String>{
       'station_interface': stationInterface,
-      'subnet': subnet,
     }).query;
     return getJson('/proxy/launch-monitor/scan?$query');
   }

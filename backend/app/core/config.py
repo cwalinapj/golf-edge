@@ -13,6 +13,7 @@ class Settings(BaseSettings):
     enable_mevo_rf: bool = True
     enable_oak: bool = False
     enable_sensors: bool = True
+    esp32_control_url: str = "http://192.168.7.2"
 
     model_config = SettingsConfigDict(env_file=".env", extra="ignore")
 
