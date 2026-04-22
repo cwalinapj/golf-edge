@@ -65,6 +65,29 @@ class ApiClient {
     );
   }
 
+  Future<Map<String, dynamic>> scanWlan0Wifi({String interface = 'wlan0'}) {
+    return getJson('/admin/wlan0/wifi/scan?interface=$interface');
+  }
+
+  Future<Map<String, dynamic>> authenticateWlan0Wifi({
+    required String ssid,
+    required String password,
+    String? bssid,
+    String interface = 'wlan0',
+    bool save = true,
+  }) {
+    return postJson(
+      '/admin/wlan0/wifi/authenticate',
+      body: <String, dynamic>{
+        'ssid': ssid,
+        'password': password,
+        if (bssid != null && bssid.isNotEmpty) 'bssid': bssid,
+        'interface': interface,
+        'save': save,
+      },
+    );
+  }
+
   Future<Map<String, dynamic>> bindLaunchMonitor({
     required String ssid,
     required String bssid,

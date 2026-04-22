@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:reown_appkit/reown_appkit.dart';
 
-import 'core/admin_wifi_channel.dart';
 import 'core/api_client.dart';
 import 'core/wallet_user.dart';
 
@@ -10,14 +9,12 @@ class WalletConnectGate extends StatefulWidget {
     required this.onConnected,
     required this.onGuest,
     this.apiClient,
-    this.adminWifiChannel = const AdminWifiChannel(),
     super.key,
   });
 
   final ValueChanged<WalletUser> onConnected;
   final VoidCallback onGuest;
   final ApiClient? apiClient;
-  final AdminWifiChannel adminWifiChannel;
 
   @override
   State<WalletConnectGate> createState() => _WalletConnectGateState();
@@ -131,24 +128,17 @@ class _WalletConnectGateState extends State<WalletConnectGate> {
   Future<void> _openAdminSetup() async {
     setState(() {
       _openingAdmin = true;
-      _status = 'Opening Rail Golf setup network...';
+      _status = 'Opening Rail Golf configuration access...';
     });
 
     try {
       await _apiClient.openSetupAp();
-    } catch (_) {
-      // The Pi may already be in setup AP mode, or the phone may not be on a
-      // network that can reach the Pi yet. Still try joining the default AP.
-    }
-
-    try {
-      await widget.adminWifiChannel.connectSetupAp();
       if (mounted) {
-        setState(() => _status = 'Connected to Rail Golf setup network.');
+        setState(() => _status = 'Rail Golf configuration access is open.');
       }
     } catch (error) {
       if (mounted) {
-        setState(() => _status = 'Setup network unavailable: $error');
+        setState(() => _status = 'Configuration access unavailable: $error');
       }
     } finally {
       if (mounted) {
