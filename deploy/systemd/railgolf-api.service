@@ -1,0 +1,17 @@
+[Unit]
+Description=Rail Golf FastAPI backend
+After=network-online.target railgolf-setup-ap.service railgolf-eth1-isolation.service
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=zoly55
+WorkingDirectory=/home/zoly55/repos/golf-edge
+Environment=PATH=/home/zoly55/repos/golf-edge/.venv/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
+Environment=RAIL_GOLF_ESP32_CONTROL_URL=http://192.168.7.2
+ExecStart=/home/zoly55/repos/golf-edge/.venv/bin/uvicorn backend.app.main:app --host 0.0.0.0 --port 8000
+Restart=on-failure
+RestartSec=2
+
+[Install]
+WantedBy=multi-user.target
