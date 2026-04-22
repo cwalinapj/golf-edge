@@ -42,3 +42,7 @@ The default API URL is `http://192.168.4.1:8000`, the Pi address on the `railgol
 Launch monitor scan and bind requests are routed through the Pi API to the ESP32
 control endpoint on the Pi's `eth1` transport. Override the ESP32 control URL on
 the Pi with `ESP32_CONTROL_URL` if firmware uses a different USB-NCM address.
+
+See [`docs/android_app_architecture.md`](docs/android_app_architecture.md) for
+the Android module split across dashboard, proxy control, FS Golf automation,
+recipes, logs, and shared core layers.
