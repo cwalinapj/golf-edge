@@ -3,6 +3,9 @@
 
     <uses-permission android:name="android.permission.ACCESS_WIFI_STATE" />
     <uses-permission android:name="android.permission.CHANGE_WIFI_STATE" />
+    <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
+    <uses-permission android:name="android.permission.CHANGE_NETWORK_STATE" />
+    <uses-permission android:name="android.permission.INTERNET" />
 
     <!-- Android 13+ -->
     <uses-permission
@@ -14,9 +17,10 @@
 
     <application
         android:allowBackup="true"
-        android:label="MevoBinder"
+        android:icon="@mipmap/ic_launcher"
+        android:label="Rail Golf"
         android:supportsRtl="true"
-        android:theme="@style/Theme.MevoBinder">
+        android:theme="@style/Theme.RailGolf">
 
         <activity
             android:name=".MainActivity"

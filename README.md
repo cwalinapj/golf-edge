@@ -1,4 +1,4 @@
-# Golf Edge
+# Rail Golf
 
 Local-first golf analytics and coaching system for Raspberry Pi 5.
 
@@ -34,7 +34,7 @@ uvicorn backend.app.main:app --reload --host 0.0.0.0 --port 8000
 ```bash
 cd tablet_app
 flutter pub get
-flutter run --dart-define=GOLF_EDGE_API_BASE_URL=http://<pi-ip>:8000
+flutter run --dart-define=RAIL_GOLF_API_BASE_URL=http://<pi-ip>:8000
 ```
 
 The default API URL is `http://10.0.2.2:8000`, which is useful for the Android emulator talking to a backend on the development machine.

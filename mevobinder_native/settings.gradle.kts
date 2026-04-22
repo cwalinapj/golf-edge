@@ -14,5 +14,5 @@ dependencyResolutionManagement {
     }
 }
 
-rootProject.name = "MevoBinder"
+rootProject.name = "RailGolf"
 include(":app")

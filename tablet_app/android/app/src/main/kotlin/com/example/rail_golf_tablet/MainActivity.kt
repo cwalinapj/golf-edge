@@ -1,4 +1,4 @@
-package com.example.golf_edge_tablet
+package com.example.rail_golf_tablet
 
 import android.Manifest
 import android.content.BroadcastReceiver
@@ -19,7 +19,7 @@ import io.flutter.plugin.common.MethodCall
 import io.flutter.plugin.common.MethodChannel
 
 class MainActivity : FlutterActivity() {
-    private val channelName = "golf_edge/wifi_scan"
+    private val channelName = "rail_golf/wifi_scan"
     private val permissionRequestCode = 4401
     private val handler = Handler(Looper.getMainLooper())
 
@@ -152,26 +152,45 @@ class MainActivity : FlutterActivity() {
         val bssid = call.argument<String>("bssid").orEmpty()
         val capabilities = call.argument<String>("capabilities").orEmpty()
         val passphrase = call.argument<String>("passphrase").orEmpty()
+        val ownerKey = call.argument<String>("ownerKey").orEmpty()
+        val persist = call.argument<Boolean>("persist") ?: true
 
         if (ssid.isBlank() || bssid.isBlank()) {
             result.error("binding_invalid", "Select a Wi-Fi network first", null)
             return
         }
 
-        getSharedPreferences("golf_edge_wifi", Context.MODE_PRIVATE)
-            .edit()
-            .putString("ssid", ssid)
-            .putString("bssid", bssid)
-            .putString("capabilities", capabilities)
-            .putString("passphrase", passphrase)
-            .apply()
+        if (secured(capabilities) && passphrase.isBlank()) {
+            result.error("passphrase_required", "Enter the Wi-Fi passcode", null)
+            return
+        }
+
+        if (persist) {
+            val bindingOwner = ownerKey.ifBlank { "default" }
+            getSharedPreferences("rail_golf_wifi_$bindingOwner", Context.MODE_PRIVATE)
+                .edit()
+                .putString("ssid", ssid)
+                .putString("bssid", bssid)
+                .putString("capabilities", capabilities)
+                .putString("passphrase", passphrase)
+                .apply()
+        }
 
         result.success(null)
     }
 
+    private fun secured(capabilities: String): Boolean {
+        return capabilities.contains("WEP") ||
+            capabilities.contains("WPA") ||
+            capabilities.contains("SAE")
+    }
+
     private fun requiredPermissions(): Array<String> {
         return if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-            arrayOf(Manifest.permission.NEARBY_WIFI_DEVICES)
+            arrayOf(
+                Manifest.permission.NEARBY_WIFI_DEVICES,
+                Manifest.permission.ACCESS_FINE_LOCATION
+            )
         } else {
             arrayOf(Manifest.permission.ACCESS_FINE_LOCATION)
         }
@@ -195,7 +214,7 @@ class MainActivity : FlutterActivity() {
     }
 
     private fun requiresLocationForScan(): Boolean {
-        return Build.VERSION.SDK_INT < Build.VERSION_CODES.TIRAMISU
+        return true
     }
 
     private fun scanResults(results: List<ScanResult>): List<Map<String, Any>> {

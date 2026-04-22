@@ -1,25 +1,42 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
+import 'core/api_client.dart';
+import 'core/mevo_binding_store.dart';
+import 'core/wallet_user.dart';
 import 'core/wifi_scan_channel.dart';
 
 class WifiSetupScreen extends StatefulWidget {
-  const WifiSetupScreen({super.key, WifiScanChannel? channel})
-      : channel = channel ?? const _DefaultWifiScanChannel();
+  const WifiSetupScreen({
+    super.key,
+    this.apiClient,
+    this.channel,
+  });
 
-  final WifiScanChannel channel;
+  final WifiScanChannel? channel;
+  final ApiClient? apiClient;
 
   @override
   State<WifiSetupScreen> createState() => _WifiSetupScreenState();
 }
 
 class _WifiSetupScreenState extends State<WifiSetupScreen> {
+  final _bindingStore = MevoBindingStore();
   final _passphraseController = TextEditingController();
   List<WifiNetwork> _networks = const [];
   WifiNetwork? _selected;
+  SavedMevoBinding? _savedBinding;
   String? _status;
+  bool _showPassphrase = false;
   bool _scanning = false;
   bool _saving = false;
+  bool _continuing = false;
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    _loadSavedBinding();
+  }
 
   @override
   void dispose() {
@@ -34,18 +51,10 @@ class _WifiSetupScreenState extends State<WifiSetupScreen> {
     });
 
     try {
-      final networks = await widget.channel.scan();
+      final networks = await _scanChannel.scan();
       setState(() {
         _networks = networks;
-        final previous = _selected;
-        WifiNetwork? nextSelected;
-        for (final network in networks) {
-          if (network.bssid == previous?.bssid) {
-            nextSelected = network;
-            break;
-          }
-        }
-        _selected = nextSelected ?? (networks.isEmpty ? null : networks.first);
+        _selected = null;
         _status = networks.isEmpty
             ? 'No networks returned'
             : 'Found ${networks.length} networks';
@@ -61,6 +70,7 @@ class _WifiSetupScreenState extends State<WifiSetupScreen> {
 
   Future<void> _save() async {
     final selected = _selected;
+    final user = WalletUserScope.of(context);
     if (selected == null) {
       return;
     }
@@ -71,15 +81,28 @@ class _WifiSetupScreenState extends State<WifiSetupScreen> {
     });
 
     try {
-      await widget.channel.saveBinding(
-        WifiBinding(
-          ssid: selected.ssid,
-          bssid: selected.bssid,
-          capabilities: selected.capabilities,
-          passphrase: _passphraseController.text,
-        ),
+      final binding = WifiBinding(
+        ssid: selected.ssid,
+        bssid: selected.bssid,
+        capabilities: selected.capabilities,
+        passphrase: _passphraseController.text,
+        ownerKey: user.storageKey,
+        persist: user.persistsBinding,
       );
-      setState(() => _status = 'Saved ${selected.ssid}');
+      await _bindingStore.save(user, binding);
+      final savedBinding = await _bindingStore.load(user) ??
+          SavedMevoBinding(
+            ssid: binding.ssid,
+            bssid: binding.bssid,
+            capabilities: binding.capabilities,
+            savedAt: DateTime.now(),
+          );
+      setState(() {
+        _savedBinding = savedBinding;
+        _status = user.persistsBinding
+            ? 'Saved ${selected.ssid}'
+            : 'Guest binding active for this session';
+      });
     } catch (error) {
       setState(() => _status = _friendlyError(error));
     } finally {
@@ -89,11 +112,74 @@ class _WifiSetupScreenState extends State<WifiSetupScreen> {
     }
   }
 
+  Future<void> _continueToPi() async {
+    final selected = _selected;
+    final savedBinding = _savedBinding;
+    final user = WalletUserScope.of(context);
+    if (selected == null ||
+        savedBinding == null ||
+        savedBinding.bssid != selected.bssid) {
+      return;
+    }
+
+    setState(() {
+      _continuing = true;
+      _status = null;
+    });
+
+    try {
+      final response = await _apiClient.bindLaunchMonitor(
+        ssid: savedBinding.ssid,
+        bssid: savedBinding.bssid,
+        capabilities: savedBinding.capabilities,
+        passphrase: _passphraseController.text,
+        ownerKey: user.storageKey,
+        stationInterface: 'wlan1',
+        keepConnected: true,
+      );
+      if (response['connected'] != true) {
+        throw ApiClientException(
+          response['detail'] as String? ??
+              'Pi could not connect wlan1 to the launch monitor.',
+        );
+      }
+      setState(() => _status = 'Pi connected to ${savedBinding.ssid} on wlan1');
+    } catch (error) {
+      setState(() => _status = _friendlyError(error));
+    } finally {
+      if (mounted) {
+        setState(() => _continuing = false);
+      }
+    }
+  }
+
+  ApiClient get _apiClient {
+    return widget.apiClient ??
+        ApiClient(
+          baseUrl: const String.fromEnvironment(
+            'RAIL_GOLF_API_BASE_URL',
+            defaultValue: 'http://10.0.2.2:8000',
+          ),
+        );
+  }
+
+  WifiScanChannel get _scanChannel {
+    return widget.channel ?? PiWifiScanChannel(_apiClient);
+  }
+
   String _friendlyError(Object error) {
     if (error is PlatformException) {
       return error.message ?? error.code;
     }
     return error.toString();
+  }
+
+  Future<void> _loadSavedBinding() async {
+    final user = WalletUserScope.of(context);
+    final savedBinding = await _bindingStore.load(user);
+    if (mounted) {
+      setState(() => _savedBinding = savedBinding);
+    }
   }
 
   @override
@@ -113,29 +199,40 @@ class _WifiSetupScreenState extends State<WifiSetupScreen> {
           );
           final details = _BindingPanel(
             selected: selected,
+            savedBinding: _savedBinding,
             passphraseController: _passphraseController,
+            isSaved: _savedBinding?.bssid == selected?.bssid,
+            showPassphrase: _showPassphrase,
+            onTogglePassphrase: () {
+              setState(() => _showPassphrase = !_showPassphrase);
+            },
             saving: _saving,
+            continuing: _continuing,
             status: _status,
             onSave: selected == null || _saving ? null : _save,
+            onContinue: _savedBinding?.bssid == selected?.bssid && !_continuing
+                ? _continueToPi
+                : null,
           );
+
+          if (selected != null) {
+            return Center(
+              child: ConstrainedBox(
+                constraints: const BoxConstraints(maxWidth: 520),
+                child: SizedBox.expand(child: details),
+              ),
+            );
+          }
 
           if (wide) {
             return Row(
               crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                Expanded(flex: 3, child: list),
-                const SizedBox(width: 16),
-                Expanded(flex: 2, child: details),
-              ],
+              children: [Expanded(child: list)],
             );
           }
 
           return ListView(
-            children: [
-              SizedBox(height: 420, child: list),
-              const SizedBox(height: 16),
-              SizedBox(height: 360, child: details),
-            ],
+            children: [SizedBox(height: 420, child: list)],
           );
         },
       ),
@@ -161,7 +258,7 @@ class _NetworkList extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return _Panel(
-      title: 'Mevo Wi-Fi',
+      title: 'Find Launch Monitor',
       action: FilledButton.icon(
         onPressed: scanning ? null : onScan,
         icon: scanning
@@ -210,56 +307,116 @@ class _NetworkList extends StatelessWidget {
 class _BindingPanel extends StatelessWidget {
   const _BindingPanel({
     required this.selected,
+    required this.savedBinding,
     required this.passphraseController,
+    required this.isSaved,
+    required this.showPassphrase,
+    required this.onTogglePassphrase,
     required this.saving,
+    required this.continuing,
     required this.status,
     required this.onSave,
+    required this.onContinue,
   });
 
   final WifiNetwork? selected;
+  final SavedMevoBinding? savedBinding;
   final TextEditingController passphraseController;
+  final bool isSaved;
+  final bool showPassphrase;
+  final VoidCallback onTogglePassphrase;
   final bool saving;
+  final bool continuing;
   final String? status;
   final VoidCallback? onSave;
+  final VoidCallback? onContinue;
 
   @override
   Widget build(BuildContext context) {
     return _Panel(
-      title: 'Binding',
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          _FieldRow(label: 'SSID', value: selected?.ssid ?? 'none'),
-          _FieldRow(label: 'BSSID', value: selected?.bssid ?? 'none'),
-          _FieldRow(label: 'Security', value: selected?.capabilities ?? 'none'),
-          const SizedBox(height: 18),
-          TextField(
-            controller: passphraseController,
-            obscureText: true,
-            decoration: const InputDecoration(
-              labelText: 'Passphrase',
-              prefixIcon: Icon(Icons.key),
-              border: OutlineInputBorder(),
+      title: 'Connect',
+      centerTitle: true,
+      child: SingleChildScrollView(
+        child: Center(
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(maxWidth: 420),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                if (savedBinding != null) ...[
+                  _FieldRow(label: 'Saved', value: savedBinding!.ssid),
+                  _FieldRow(label: 'BSSID', value: savedBinding!.bssid),
+                  const SizedBox(height: 8),
+                ],
+                _FieldRow(label: 'SSID', value: selected?.ssid ?? 'none'),
+                _FieldRow(label: 'BSSID', value: selected?.bssid ?? 'none'),
+                _FieldRow(
+                  label: 'Security',
+                  value: selected?.capabilities ?? 'none',
+                ),
+                const SizedBox(height: 18),
+                TextField(
+                  controller: passphraseController,
+                  obscureText: !showPassphrase,
+                  decoration: InputDecoration(
+                    labelText: 'Passphrase',
+                    prefixIcon: const Icon(Icons.key),
+                    suffixIcon: IconButton(
+                      tooltip: showPassphrase
+                          ? 'Hide passphrase'
+                          : 'Show passphrase',
+                      onPressed: onTogglePassphrase,
+                      icon: Icon(
+                        showPassphrase
+                            ? Icons.visibility_off_outlined
+                            : Icons.visibility_outlined,
+                      ),
+                    ),
+                    border: const OutlineInputBorder(),
+                  ),
+                ),
+                const SizedBox(height: 18),
+                if (status != null)
+                  Padding(
+                    padding: const EdgeInsets.only(bottom: 12),
+                    child: Text(
+                      status!,
+                      textAlign: TextAlign.center,
+                      style: const TextStyle(color: Colors.white70),
+                    ),
+                  ),
+                FilledButton.icon(
+                  onPressed: isSaved ? null : onSave,
+                  style: isSaved
+                      ? FilledButton.styleFrom(
+                          disabledBackgroundColor: Colors.lightGreen,
+                          disabledForegroundColor: Colors.black,
+                        )
+                      : null,
+                  icon: saving
+                      ? const SizedBox.square(
+                          dimension: 18,
+                          child: CircularProgressIndicator(strokeWidth: 2),
+                        )
+                      : Icon(isSaved ? Icons.check_circle : Icons.link),
+                  label: Text(isSaved ? 'Saved' : 'Connect'),
+                ),
+                const SizedBox(height: 12),
+                FilledButton.icon(
+                  onPressed: onContinue,
+                  icon: continuing
+                      ? const SizedBox.square(
+                          dimension: 18,
+                          child: CircularProgressIndicator(strokeWidth: 2),
+                        )
+                      : const Icon(Icons.arrow_forward),
+                  label: const Text('Continue'),
+                ),
+              ],
             ),
           ),
-          const Spacer(),
-          if (status != null)
-            Padding(
-              padding: const EdgeInsets.only(bottom: 12),
-              child:
-                  Text(status!, style: const TextStyle(color: Colors.white70)),
-            ),
-          FilledButton.icon(
-            onPressed: onSave,
-            icon: saving
-                ? const SizedBox.square(
-                    dimension: 18,
-                    child: CircularProgressIndicator(strokeWidth: 2),
-                  )
-                : const Icon(Icons.save),
-            label: const Text('Save'),
-          ),
-        ],
+        ),
       ),
     );
   }
@@ -276,12 +433,18 @@ class _FieldRow extends StatelessWidget {
     return Padding(
       padding: const EdgeInsets.only(bottom: 10),
       child: Row(
+        mainAxisAlignment: MainAxisAlignment.center,
         children: [
           SizedBox(
             width: 84,
-            child: Text(label, style: const TextStyle(color: Colors.white70)),
+            child: Text(
+              label,
+              textAlign: TextAlign.right,
+              style: const TextStyle(color: Colors.white70),
+            ),
           ),
-          Expanded(
+          const SizedBox(width: 18),
+          Flexible(
             child: Text(
               value,
               maxLines: 1,
@@ -296,11 +459,17 @@ class _FieldRow extends StatelessWidget {
 }
 
 class _Panel extends StatelessWidget {
-  const _Panel({required this.title, required this.child, this.action});
+  const _Panel({
+    required this.title,
+    required this.child,
+    this.action,
+    this.centerTitle = false,
+  });
 
   final String title;
   final Widget child;
   final Widget? action;
+  final bool centerTitle;
 
   @override
   Widget build(BuildContext context) {
@@ -314,25 +483,34 @@ class _Panel extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          Row(
-            children: [
-              Text(
+          if (centerTitle)
+            Center(
+              child: Text(
                 title,
-                style:
-                    const TextStyle(fontSize: 18, fontWeight: FontWeight.w700),
+                style: const TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.w700,
+                ),
               ),
-              const Spacer(),
-              if (action != null) action!,
-            ],
-          ),
+            )
+          else
+            Row(
+              children: [
+                Text(
+                  title,
+                  style: const TextStyle(
+                    fontSize: 18,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+                const Spacer(),
+                if (action != null) action!,
+              ],
+            ),
           const SizedBox(height: 16),
           Expanded(child: child),
         ],
       ),
     );
   }
-}
-
-class _DefaultWifiScanChannel extends WifiScanChannel {
-  const _DefaultWifiScanChannel();
 }

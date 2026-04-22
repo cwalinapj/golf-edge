@@ -21,6 +21,36 @@ class ApiClient {
     return getJson('/proxy/status');
   }
 
+  Future<Map<String, dynamic>> scanLaunchMonitors({
+    String stationInterface = 'wlan1',
+  }) {
+    return getJson(
+        '/proxy/launch-monitor/scan?station_interface=$stationInterface');
+  }
+
+  Future<Map<String, dynamic>> bindLaunchMonitor({
+    required String ssid,
+    required String bssid,
+    required String passphrase,
+    required String capabilities,
+    required String ownerKey,
+    String stationInterface = 'wlan1',
+    bool keepConnected = true,
+  }) {
+    return postJson(
+      '/proxy/launch-monitor/bind',
+      body: <String, dynamic>{
+        'ssid': ssid,
+        'bssid': bssid,
+        'passphrase': passphrase,
+        'capabilities': capabilities,
+        'owner_key': ownerKey,
+        'station_interface': stationInterface,
+        'keep_connected': keepConnected,
+      },
+    );
+  }
+
   Future<Map<String, dynamic>> startSession({
     required String mode,
     String? locationLabel,

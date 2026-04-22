@@ -1,9 +1,11 @@
 import 'package:flutter/services.dart';
 
+import 'api_client.dart';
+
 class WifiScanChannel {
   const WifiScanChannel();
 
-  static const _channel = MethodChannel('golf_edge/wifi_scan');
+  static const _channel = MethodChannel('rail_golf/wifi_scan');
 
   Future<List<WifiNetwork>> scan() async {
     final results = await _channel.invokeListMethod<Object?>('scanWifi');
@@ -15,6 +17,25 @@ class WifiScanChannel {
 
   Future<void> saveBinding(WifiBinding binding) {
     return _channel.invokeMethod<void>('saveWifiBinding', binding.toJson());
+  }
+}
+
+class PiWifiScanChannel extends WifiScanChannel {
+  const PiWifiScanChannel(this.apiClient);
+
+  final ApiClient apiClient;
+
+  @override
+  Future<List<WifiNetwork>> scan() async {
+    final response = await apiClient.scanLaunchMonitors();
+    final networks = response['networks'];
+    if (networks is! List) {
+      return const [];
+    }
+    return networks
+        .whereType<Map<String, dynamic>>()
+        .map(WifiNetwork.fromJson)
+        .toList();
   }
 }
 
@@ -49,6 +70,16 @@ class WifiNetwork {
       capabilities: json['capabilities'] as String? ?? '',
     );
   }
+
+  factory WifiNetwork.fromJson(Map<String, dynamic> json) {
+    return WifiNetwork(
+      ssid: json['ssid'] as String? ?? '',
+      bssid: json['bssid'] as String? ?? '',
+      level: json['level'] as int? ?? -100,
+      frequency: json['frequency'] as int? ?? 0,
+      capabilities: json['capabilities'] as String? ?? '',
+    );
+  }
 }
 
 class WifiBinding {
@@ -57,12 +88,16 @@ class WifiBinding {
     required this.bssid,
     required this.capabilities,
     required this.passphrase,
+    required this.ownerKey,
+    required this.persist,
   });
 
   final String ssid;
   final String bssid;
   final String capabilities;
   final String passphrase;
+  final String ownerKey;
+  final bool persist;
 
   Map<String, Object?> toJson() {
     return {
@@ -70,6 +105,8 @@ class WifiBinding {
       'bssid': bssid,
       'capabilities': capabilities,
       'passphrase': passphrase,
+      'ownerKey': ownerKey,
+      'persist': persist,
     };
   }
 }

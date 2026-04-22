@@ -1,13 +1,13 @@
-# Golf Edge System Plan
+# Rail Golf System Plan
 
-Golf Edge is the tablet-facing control layer for a Raspberry Pi 5 edge system. The Pi should own local orchestration, persistence, hardware IO, and the transparent Mevo proxy bridge. The Android app should stay thin: show state, collect operator intent, and invoke Pi APIs.
+Rail Golf is the tablet-facing control layer for a Raspberry Pi 5 edge system. The Pi should own local orchestration, persistence, hardware IO, and the transparent Mevo proxy bridge. The Android app should stay thin: show state, collect operator intent, and invoke Pi APIs.
 
 ## Target Topology
 
 - Mevo launch monitor connects through the existing transparent proxy path.
-- Raspberry Pi runs the transparent proxy plus the Golf Edge FastAPI backend.
-- Android tablet runs the Golf Edge UI and the FS Golf app.
-- Golf Edge UI talks to the Pi over HTTP/WebSocket.
+- Raspberry Pi runs the transparent proxy plus the Rail Golf FastAPI backend.
+- Android tablet runs the Rail Golf UI and the FS Golf app.
+- Rail Golf UI talks to the Pi over HTTP/WebSocket.
 - A future Android accessibility service watches and controls FS Golf when direct app integration is unavailable.
 - Additional MCUs publish hardware state to the Pi, preferably over USB serial, CAN, or BLE with one normalized sensor/event contract at the backend boundary.
 
@@ -40,7 +40,7 @@ Initial bridge contract:
 
 ## Proxy Changes
 
-The existing GolfSimRAS proxy should expose a local status/control surface for Golf Edge:
+The existing GolfSimRAS proxy should expose a local status/control surface for Rail Golf:
 
 - `GET /proxy/status`
 - `POST /proxy/restart`

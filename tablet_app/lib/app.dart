@@ -2,20 +2,62 @@ import 'package:flutter/material.dart';
 
 import 'core/api_client.dart';
 import 'core/models.dart';
+import 'core/wallet_user.dart';
+import 'wallet_connect_gate.dart';
 import 'wifi_setup_screen.dart';
 
-class GolfEdgeApp extends StatelessWidget {
-  const GolfEdgeApp({super.key});
+class RailGolfApp extends StatefulWidget {
+  const RailGolfApp({super.key});
 
   static const apiBaseUrl = String.fromEnvironment(
-    'GOLF_EDGE_API_BASE_URL',
+    'RAIL_GOLF_API_BASE_URL',
     defaultValue: 'http://10.0.2.2:8000',
   );
 
   @override
+  State<RailGolfApp> createState() => _RailGolfAppState();
+}
+
+class _RailGolfAppState extends State<RailGolfApp> {
+  final _walletStore = WalletUserStore();
+  WalletUser? _walletUser;
+  bool _loadingWallet = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadWalletUser();
+  }
+
+  Future<void> _loadWalletUser() async {
+    final user = await _walletStore.load();
+    if (mounted) {
+      setState(() {
+        _walletUser = user;
+        _loadingWallet = false;
+      });
+    }
+  }
+
+  Future<void> _setWalletUser(WalletUser user) async {
+    await _walletStore.save(user);
+    if (mounted) {
+      setState(() => _walletUser = user);
+    }
+  }
+
+  Future<void> _clearWalletUser() async {
+    await _walletStore.clear();
+    if (mounted) {
+      setState(() => _walletUser = null);
+    }
+  }
+
+  @override
   Widget build(BuildContext context) {
+    final walletUser = _walletUser;
     return MaterialApp(
-      title: 'Golf Edge',
+      title: 'Rail Golf',
       debugShowCheckedModeBanner: false,
       theme: ThemeData(
         useMaterial3: true,
@@ -25,37 +67,58 @@ class GolfEdgeApp extends StatelessWidget {
         ),
         scaffoldBackgroundColor: const Color(0xff101613),
       ),
-      home: const WifiSetupHost(),
+      home: _loadingWallet
+          ? const _AppLoadingScreen()
+          : walletUser == null
+              ? WalletConnectGate(
+                  onConnected: _setWalletUser,
+                  onGuest: () =>
+                      setState(() => _walletUser = WalletUser.guest()),
+                )
+              : WalletUserScope(
+                  user: walletUser,
+                  child: WifiSetupHost(
+                    walletUser: walletUser,
+                    onSignOut: _clearWalletUser,
+                  ),
+                ),
     );
   }
 }
 
 class WifiSetupHost extends StatelessWidget {
-  const WifiSetupHost({super.key});
+  const WifiSetupHost({
+    required this.walletUser,
+    required this.onSignOut,
+    super.key,
+  });
+
+  final WalletUser walletUser;
+  final VoidCallback onSignOut;
 
   @override
   Widget build(BuildContext context) {
-    return const Scaffold(
+    return Scaffold(
       body: SafeArea(
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
             Padding(
-              padding: EdgeInsets.fromLTRB(20, 18, 20, 0),
+              padding: const EdgeInsets.fromLTRB(20, 18, 20, 0),
               child: Row(
                 children: [
-                  Icon(Icons.sports_golf, size: 34),
-                  SizedBox(width: 12),
-                  Text(
-                    'Golf Edge',
+                  const Icon(Icons.sports_golf, size: 34),
+                  const SizedBox(width: 12),
+                  const Text(
+                    'Rail Golf',
                     style: TextStyle(fontSize: 28, fontWeight: FontWeight.w700),
                   ),
-                  Spacer(),
-                  Icon(Icons.router, color: Colors.lightGreenAccent),
+                  const Spacer(),
+                  _WalletChip(user: walletUser, onSignOut: onSignOut),
                 ],
               ),
             ),
-            Expanded(child: WifiSetupScreen()),
+            const Expanded(child: WifiSetupScreen()),
           ],
         ),
       ),
@@ -63,16 +126,67 @@ class WifiSetupHost extends StatelessWidget {
   }
 }
 
-class GolfEdgeDashboard extends StatefulWidget {
-  const GolfEdgeDashboard({required this.apiClient, super.key});
+class _AppLoadingScreen extends StatelessWidget {
+  const _AppLoadingScreen();
+
+  @override
+  Widget build(BuildContext context) {
+    return const Scaffold(
+      body: Center(child: CircularProgressIndicator()),
+    );
+  }
+}
+
+class _WalletChip extends StatelessWidget {
+  const _WalletChip({
+    required this.user,
+    required this.onSignOut,
+  });
+
+  final WalletUser user;
+  final VoidCallback onSignOut;
+
+  @override
+  Widget build(BuildContext context) {
+    return PopupMenuButton<String>(
+      tooltip: 'Wallet',
+      onSelected: (value) {
+        if (value == 'sign_out') {
+          onSignOut();
+        }
+      },
+      itemBuilder: (context) => const [
+        PopupMenuItem(value: 'sign_out', child: Text('Disconnect')),
+      ],
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+        decoration: BoxDecoration(
+          color: Theme.of(context).colorScheme.surfaceContainerHighest,
+          borderRadius: BorderRadius.circular(8),
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const Icon(Icons.account_balance_wallet_outlined, size: 18),
+            const SizedBox(width: 8),
+            Text(user.shortAddress),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class RailGolfDashboard extends StatefulWidget {
+  const RailGolfDashboard({required this.apiClient, super.key});
 
   final ApiClient apiClient;
 
   @override
-  State<GolfEdgeDashboard> createState() => _GolfEdgeDashboardState();
+  State<RailGolfDashboard> createState() => _RailGolfDashboardState();
 }
 
-class _GolfEdgeDashboardState extends State<GolfEdgeDashboard> {
+class _RailGolfDashboardState extends State<RailGolfDashboard> {
   final _locationController = TextEditingController(text: 'Garage Bay');
   final _targetController = TextEditingController(text: '150');
   final _holeController = TextEditingController(text: '1');
@@ -116,7 +230,7 @@ class _GolfEdgeDashboardState extends State<GolfEdgeDashboard> {
         _connection = const ApiConnectionState(
           online: true,
           label: 'Pi API online',
-          detail: GolfEdgeApp.apiBaseUrl,
+          detail: RailGolfApp.apiBaseUrl,
         );
         _sensors = SensorSnapshot.fromJson(sensorJson);
         _proxyStatus = ProxyStatus.fromJson(proxyJson);
@@ -312,7 +426,7 @@ class _TopBar extends StatelessWidget {
         const Icon(Icons.sports_golf, size: 34),
         const SizedBox(width: 12),
         const Text(
-          'Golf Edge',
+          'Rail Golf',
           style: TextStyle(fontSize: 28, fontWeight: FontWeight.w700),
         ),
         const Spacer(),

@@ -2,7 +2,7 @@ from fastapi import FastAPI
 
 from backend.app.api import events, mevo, proxy, sensors, sessions, ws
 
-app = FastAPI(title="Golf Edge API")
+app = FastAPI(title="Rail Golf API")
 app.include_router(sessions.router)
 app.include_router(events.router)
 app.include_router(sensors.router)
