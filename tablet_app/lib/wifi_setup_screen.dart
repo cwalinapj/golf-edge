@@ -77,7 +77,7 @@ class _WifiSetupScreenState extends State<WifiSetupScreen> {
 
     setState(() {
       _saving = true;
-      _status = null;
+      _status = 'Connecting ESP32 to ${selected.ssid}...';
     });
 
     try {
@@ -89,6 +89,21 @@ class _WifiSetupScreenState extends State<WifiSetupScreen> {
         ownerKey: user.storageKey,
         persist: user.persistsBinding,
       );
+      final response = await _apiClient.bindLaunchMonitor(
+        ssid: binding.ssid,
+        bssid: binding.bssid,
+        capabilities: binding.capabilities,
+        passphrase: binding.passphrase,
+        ownerKey: binding.ownerKey,
+        stationInterface: 'eth1',
+        keepConnected: true,
+      );
+      if (response['connected'] != true) {
+        throw ApiClientException(
+          response['detail'] as String? ?? 'Wrong passcode please try again.',
+        );
+      }
+
       await _bindingStore.save(user, binding);
       final savedBinding = await _bindingStore.load(user) ??
           SavedMevoBinding(
@@ -100,8 +115,8 @@ class _WifiSetupScreenState extends State<WifiSetupScreen> {
       setState(() {
         _savedBinding = savedBinding;
         _status = user.persistsBinding
-            ? 'Saved ${selected.ssid}'
-            : 'Guest binding active for this session';
+            ? 'ESP32 connected and saved ${selected.ssid}'
+            : 'ESP32 connected for this guest session';
       });
     } catch (error) {
       setState(() => _status = _friendlyError(error));
@@ -115,7 +130,6 @@ class _WifiSetupScreenState extends State<WifiSetupScreen> {
   Future<void> _continueToPi() async {
     final selected = _selected;
     final savedBinding = _savedBinding;
-    final user = WalletUserScope.of(context);
     if (selected == null ||
         savedBinding == null ||
         savedBinding.bssid != selected.bssid) {
@@ -124,26 +138,11 @@ class _WifiSetupScreenState extends State<WifiSetupScreen> {
 
     setState(() {
       _continuing = true;
-      _status = null;
+      _status = 'Launch monitor already connected. Controller handoff is next.';
     });
 
     try {
-      final response = await _apiClient.bindLaunchMonitor(
-        ssid: savedBinding.ssid,
-        bssid: savedBinding.bssid,
-        capabilities: savedBinding.capabilities,
-        passphrase: _passphraseController.text,
-        ownerKey: user.storageKey,
-        stationInterface: 'eth1',
-        keepConnected: true,
-      );
-      if (response['connected'] != true) {
-        throw ApiClientException(
-          response['detail'] as String? ??
-              'Pi could not bind the ESP32 to the launch monitor.',
-        );
-      }
-      setState(() => _status = 'ESP32 connected to ${savedBinding.ssid}');
+      setState(() => _status = 'Ready for controller handoff.');
     } catch (error) {
       setState(() => _status = _friendlyError(error));
     } finally {
