@@ -10,5 +10,7 @@ fun FsGolfControlRoute(viewModel: FsGolfControlViewModel) {
         onOutdoorMode = viewModel::outdoorMode,
         onIndoorMode = viewModel::indoorMode,
         onStartSession = viewModel::startSession,
+        onBack = viewModel::back,
+        onOpenRadarAdjustment = viewModel::openRadarAdjustment,
     )
 }

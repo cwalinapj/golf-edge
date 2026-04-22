@@ -14,4 +14,8 @@ class FsGolfControlViewModel(private val accessibilityFacade: AccessibilityFacad
     fun indoorMode() = IndoorModeAction(accessibilityFacade).run()
 
     fun startSession() = StartSessionAction(accessibilityFacade).run()
+
+    fun back() = accessibilityFacade.runRecipe("back")
+
+    fun openRadarAdjustment() = accessibilityFacade.runRecipe("open_radar_adjustment")
 }

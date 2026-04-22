@@ -5,5 +5,11 @@ import com.railgolf.feature.proxy.viewmodel.ProxyViewModel
 
 @Composable
 fun ProxyRoute(viewModel: ProxyViewModel) {
-    ProxyScreen(status = viewModel.status())
+    ProxyScreen(
+        status = viewModel.status(),
+        onStartProxy = viewModel::startProxy,
+        onStopProxy = viewModel::stopProxy,
+        onRefreshStatus = viewModel::refreshStatus,
+        onViewDiscoveryResponse = viewModel::viewDiscoveryResponse,
+    )
 }

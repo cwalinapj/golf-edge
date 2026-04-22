@@ -13,6 +13,8 @@ fun FsGolfControlScreen(
     onOutdoorMode: () -> Unit,
     onIndoorMode: () -> Unit,
     onStartSession: () -> Unit,
+    onBack: () -> Unit,
+    onOpenRadarAdjustment: () -> Unit,
 ) {
     Column {
         SectionHeader(text = "FS Golf")
@@ -20,5 +22,7 @@ fun FsGolfControlScreen(
         ActionButton(label = "Outdoor Mode", onClick = onOutdoorMode)
         ActionButton(label = "Indoor Mode", onClick = onIndoorMode)
         ActionButton(label = "Start Session", onClick = onStartSession)
+        ActionButton(label = "Back", onClick = onBack)
+        ActionButton(label = "Open Radar Adjustment", onClick = onOpenRadarAdjustment)
     }
 }
