@@ -30,19 +30,40 @@ package, mirror them as folders under `lib/` and native packages under
 Do not build all modules on day one. Start with the smallest useful vertical
 slice:
 
-- `app`
-- `feature-dashboard`
-- `feature-proxy`
-- `feature-fsgolf-control`
-- `core-accessibility`
-- `core-pi-api`
-- `core-model`
+```text
+:app
+:feature-dashboard
+:feature-proxy
+:feature-fsgolf-control
+:core-accessibility
+:core-pi-api
+:core-model
+:core-ui
+:core-common
+```
+
+In Flutter source, mirror those names with underscore folders where needed:
+
+```text
+lib/features/dashboard/
+lib/features/proxy/
+lib/features/fsgolf_control/
+lib/core/accessibility/
+lib/core/pi_api/
+lib/core/model/
+lib/core/ui/
+lib/core/common/
+```
 
 Then add:
 
-- `feature-recipes`
-- `feature-logs`
-- `core-database`
+```text
+:feature-recipes
+:feature-logs
+:core-data
+:core-database
+:core-network
+```
 
 ### app
 
@@ -335,10 +356,20 @@ app
 Internally, these are the allowed dependency edges:
 
 ```text
-feature-* -> core-data, core-model, core-ui
-core-data -> core-pi-api, core-accessibility, core-database, core-model
-core-pi-api -> core-network, core-model
+app
+ ├─ feature-dashboard
+ ├─ feature-proxy
+ ├─ feature-fsgolf-control
+ ├─ core-ui
+ └─ core-common
+
+feature-dashboard -> core-pi-api, core-accessibility, core-model, core-ui
+feature-proxy -> core-pi-api, core-model, core-ui
+feature-fsgolf-control -> core-accessibility, core-model, core-ui
+
+core-pi-api -> core-model, core-common
 core-accessibility -> core-model, core-common
+core-ui -> core-common
 ```
 
 Forbidden dependencies:

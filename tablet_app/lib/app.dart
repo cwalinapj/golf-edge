@@ -1,19 +1,30 @@
 import 'package:flutter/material.dart';
 
+import 'core/accessibility/executor/fs_golf_recipe_executor.dart';
 import 'controller_setup_screen.dart';
 import 'core/api_client.dart';
 import 'core/models.dart';
+import 'core/pi_api/api/pi_api_client.dart';
 import 'core/wallet_user.dart';
+import 'features/dashboard/ui/minimal_dashboard_screen.dart';
+import 'features/fsgolf_control/actions/fs_golf_actions.dart';
 import 'wallet_connect_gate.dart';
 import 'wifi_setup_screen.dart';
 
 class RailGolfApp extends StatefulWidget {
-  const RailGolfApp({super.key});
+  const RailGolfApp({
+    super.key,
+    this.apiClient,
+    this.fsGolfActions,
+  });
 
   static const apiBaseUrl = String.fromEnvironment(
     'RAIL_GOLF_API_BASE_URL',
     defaultValue: 'http://192.168.4.1:8000',
   );
+
+  final ApiClient? apiClient;
+  final FsGolfActions? fsGolfActions;
 
   @override
   State<RailGolfApp> createState() => _RailGolfAppState();
@@ -64,11 +75,63 @@ class _RailGolfAppState extends State<RailGolfApp> {
             )
           : WalletUserScope(
               user: walletUser,
-              child: WifiSetupHost(
+              child: DashboardHost(
                 walletUser: walletUser,
                 onSignOut: _clearWalletUser,
+                apiClient: widget.apiClient,
+                fsGolfActions: widget.fsGolfActions,
               ),
             ),
+    );
+  }
+}
+
+class DashboardHost extends StatelessWidget {
+  const DashboardHost({
+    required this.walletUser,
+    required this.onSignOut,
+    this.apiClient,
+    this.fsGolfActions,
+    super.key,
+  });
+
+  final WalletUser walletUser;
+  final VoidCallback onSignOut;
+  final ApiClient? apiClient;
+  final FsGolfActions? fsGolfActions;
+
+  @override
+  Widget build(BuildContext context) {
+    final client = apiClient ??
+        ApiClient(
+          baseUrl: RailGolfApp.apiBaseUrl,
+        );
+    final actions = fsGolfActions ??
+        const FsGolfActions(
+          executor: FsGolfRecipeExecutor(),
+        );
+    return Scaffold(
+      body: SafeArea(
+        child: Column(
+          children: [
+            Padding(
+              padding: const EdgeInsets.fromLTRB(20, 18, 20, 0),
+              child: Row(
+                children: [
+                  const Spacer(),
+                  _WalletChip(user: walletUser, onSignOut: onSignOut),
+                ],
+              ),
+            ),
+            Expanded(
+              child: MinimalDashboardScreen(
+                piApiClient: PiApiClient(apiClient: client),
+                fsGolfActions: actions,
+              ),
+            ),
+          ],
+        ),
+      ),
     );
   }
 }

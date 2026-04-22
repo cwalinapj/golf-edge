@@ -3,9 +3,12 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import 'package:rail_golf_tablet/app.dart';
+import 'package:rail_golf_tablet/core/accessibility/executor/fs_golf_recipe_executor.dart';
+import 'package:rail_golf_tablet/core/accessibility/model/accessibility_action_result.dart';
 import 'package:rail_golf_tablet/core/api_client.dart';
 import 'package:rail_golf_tablet/core/wallet_user.dart';
 import 'package:rail_golf_tablet/core/wifi_scan_channel.dart';
+import 'package:rail_golf_tablet/features/fsgolf_control/actions/fs_golf_actions.dart';
 import 'package:rail_golf_tablet/wifi_setup_screen.dart';
 
 void main() {
@@ -45,13 +48,23 @@ void main() {
       (tester) async {
     SharedPreferences.setMockInitialValues({});
 
-    await tester.pumpWidget(const RailGolfApp());
+    await tester.pumpWidget(
+      RailGolfApp(
+        apiClient: _FakeApiClient(),
+        fsGolfActions: FsGolfActions(executor: _FakeFsGolfRecipeExecutor()),
+      ),
+    );
     await tester.pumpAndSettle();
     await tester.tap(find.text('Login as guest'));
     await tester.pumpAndSettle();
 
     expect(find.text('Guest'), findsOneWidget);
-    expect(find.text('Connect to Rail Golf Controller'), findsOneWidget);
+    expect(find.text('Pi connected'), findsOneWidget);
+    expect(find.text('Proxy status'), findsOneWidget);
+    expect(find.text('FS Golf current screen'), findsOneWidget);
+    expect(find.text('Outdoor Mode'), findsOneWidget);
+    expect(find.text('Indoor Mode'), findsOneWidget);
+    expect(find.text('Start Session'), findsOneWidget);
     expect(find.text('Find Launch Monitor'), findsNothing);
   });
 
@@ -143,6 +156,38 @@ class _FakeApiClient extends ApiClient {
 
   String? boundSsid;
   String? boundBssid;
+  bool startedSession = false;
+
+  @override
+  Future<Map<String, dynamic>> health() async {
+    return {'status': 'ok'};
+  }
+
+  @override
+  Future<Map<String, dynamic>> proxyStatus() async {
+    return {
+      'status': 'running',
+      'mevo_connected': true,
+      'client_connected': true,
+      'packets_seen': 4,
+      'open_ports': [5100, 1258],
+      'mevo_ip': '192.168.2.1',
+      'detail': 'ok',
+    };
+  }
+
+  @override
+  Future<Map<String, dynamic>> startSession({
+    required String mode,
+    String? locationLabel,
+  }) async {
+    startedSession = true;
+    return {
+      'id': 'session-1234',
+      'mode': mode,
+      'status': 'active',
+    };
+  }
 
   @override
   Future<Map<String, dynamic>> bindLaunchMonitor({
@@ -166,5 +211,21 @@ class _FakeApiClient extends ApiClient {
       'connected': true,
       'detail': 'connected',
     };
+  }
+}
+
+class _FakeFsGolfRecipeExecutor extends FsGolfRecipeExecutor {
+  @override
+  Future<String> currentScreen() async {
+    return 'Range';
+  }
+
+  @override
+  Future<AccessibilityActionResult> runRecipe(String recipeId) async {
+    return AccessibilityActionResult(
+      ok: true,
+      message: 'Ran $recipeId',
+      screenLabel: 'Range',
+    );
   }
 }

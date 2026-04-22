@@ -46,3 +46,10 @@ the Pi with `ESP32_CONTROL_URL` if firmware uses a different USB-NCM address.
 See [`docs/android_app_architecture.md`](docs/android_app_architecture.md) for
 the Android module split across dashboard, proxy control, FS Golf automation,
 recipes, logs, and shared core layers.
+
+The native Kotlin/Compose multi-module scaffold lives in `rail-golf-android/`.
+Build it with:
+
+```bash
+../tablet_app/android/gradlew -p rail-golf-android assembleDebug
+```
