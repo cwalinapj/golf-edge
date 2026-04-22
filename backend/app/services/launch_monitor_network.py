@@ -27,6 +27,8 @@ class LaunchMonitorScanResult(BaseModel):
 
 
 class LaunchMonitorNetworkManager:
+    controller_ssids = {"railgolf"}
+
     def __init__(self, control_url: str | None = None) -> None:
         self.control_url = (control_url or settings.esp32_control_url).rstrip("/")
 
@@ -70,6 +72,7 @@ class LaunchMonitorNetworkManager:
             for item in raw_networks
             if isinstance(item, dict)
             if (network := self._parse_esp32_network(item)) is not None
+            if network.ssid.strip().lower() not in self.controller_ssids
         ]
         networks.sort(key=lambda network: network.level, reverse=True)
         return LaunchMonitorScanResult(

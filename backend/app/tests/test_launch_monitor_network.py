@@ -13,6 +13,13 @@ def test_scan_delegates_to_esp32_control_api(monkeypatch):
             json={
                 "networks": [
                     {
+                        "ssid": "railgolf",
+                        "bssid": "11:22:33:44:55:66",
+                        "rssi": -20,
+                        "frequency": 2412,
+                        "security": "WPA2",
+                    },
+                    {
                         "ssid": "FS M2-041799",
                         "bssid": "AA:BB:CC:DD:EE:FF",
                         "rssi": -41,
@@ -32,6 +39,7 @@ def test_scan_delegates_to_esp32_control_api(monkeypatch):
     assert result.networks[0].ssid == "FS M2-041799"
     assert result.networks[0].level == -41
     assert result.networks[0].capabilities == "WPA2"
+    assert all(network.ssid != "railgolf" for network in result.networks)
 
 
 def test_bind_reports_wrong_passcode_from_esp32(monkeypatch):
