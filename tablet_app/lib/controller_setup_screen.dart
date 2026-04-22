@@ -2,16 +2,19 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
 import 'core/controller_wifi_channel.dart';
+import 'core/wifi_scan_channel.dart';
 
 class ControllerSetupScreen extends StatefulWidget {
   const ControllerSetupScreen({
     required this.onConnected,
     this.channel = const ControllerWifiChannel(),
+    this.scanChannel = const WifiScanChannel(),
     super.key,
   });
 
   final VoidCallback onConnected;
   final ControllerWifiChannel channel;
+  final WifiScanChannel scanChannel;
 
   @override
   State<ControllerSetupScreen> createState() => _ControllerSetupScreenState();
@@ -21,7 +24,9 @@ class _ControllerSetupScreenState extends State<ControllerSetupScreen> {
   final _ssidController = TextEditingController(text: 'railgolf');
   final _passwordController = TextEditingController(text: 'password');
   bool _busy = false;
+  bool _scanning = false;
   bool _showPassword = false;
+  WifiNetwork? _controllerNetwork;
   String? _status;
 
   @override
@@ -31,11 +36,62 @@ class _ControllerSetupScreenState extends State<ControllerSetupScreen> {
     super.dispose();
   }
 
+  Future<void> _scanForController() async {
+    setState(() {
+      _scanning = true;
+      _status = 'Scanning for Rail Golf Controller...';
+      _controllerNetwork = null;
+    });
+
+    try {
+      final networks = await widget.scanChannel.scan();
+      final matches = networks
+          .where((network) => network.ssid.toLowerCase() == 'railgolf')
+          .toList()
+        ..sort((a, b) => b.level.compareTo(a.level));
+      if (!mounted) {
+        return;
+      }
+      if (matches.isEmpty) {
+        setState(
+          () => _status =
+              'Controller not found. Make sure wlan1 is broadcasting railgolf, then scan again.',
+        );
+        return;
+      }
+
+      final best = matches.first;
+      setState(() {
+        _controllerNetwork = best;
+        _ssidController.text = best.ssid;
+        _status = 'Found ${best.ssid} on ${best.band}.';
+      });
+    } catch (error) {
+      if (!mounted) {
+        return;
+      }
+      setState(() => _status = _friendlyError(error));
+    } finally {
+      if (mounted) {
+        setState(() => _scanning = false);
+      }
+    }
+  }
+
   Future<void> _connect() async {
     final ssid = _ssidController.text.trim();
     final password = _passwordController.text;
+    final controllerNetwork = _controllerNetwork;
     if (ssid.isEmpty) {
       setState(() => _status = 'Enter the controller network name.');
+      return;
+    }
+    if (controllerNetwork == null ||
+        controllerNetwork.ssid.toLowerCase() != ssid.toLowerCase()) {
+      setState(
+        () => _status =
+            'Scan and select the Rail Golf Controller before connecting.',
+      );
       return;
     }
     if (password.length < 8) {
@@ -101,8 +157,20 @@ class _ControllerSetupScreenState extends State<ControllerSetupScreen> {
                   style: TextStyle(fontSize: 20, fontWeight: FontWeight.w800),
                 ),
                 const SizedBox(height: 18),
+                OutlinedButton.icon(
+                  onPressed: _busy || _scanning ? null : _scanForController,
+                  icon: _scanning
+                      ? const SizedBox.square(
+                          dimension: 18,
+                          child: CircularProgressIndicator(strokeWidth: 2),
+                        )
+                      : const Icon(Icons.radar_outlined),
+                  label: const Text('Scan for Controller'),
+                ),
+                const SizedBox(height: 14),
                 TextField(
                   controller: _ssidController,
+                  readOnly: true,
                   decoration: const InputDecoration(
                     labelText: 'Controller network',
                     prefixIcon: Icon(Icons.router_outlined),
@@ -141,7 +209,9 @@ class _ControllerSetupScreenState extends State<ControllerSetupScreen> {
                 ],
                 const SizedBox(height: 18),
                 FilledButton.icon(
-                  onPressed: _busy ? null : _connect,
+                  onPressed: _busy || _scanning || _controllerNetwork == null
+                      ? null
+                      : _connect,
                   icon: _busy
                       ? const SizedBox.square(
                           dimension: 18,
