@@ -9,6 +9,60 @@ class ApiClient {
   final String baseUrl;
   final http.Client _client;
 
+  Future<Map<String, dynamic>> health() {
+    return getJson('/health');
+  }
+
+  Future<Map<String, dynamic>> currentSensors() {
+    return getJson('/sensors/current');
+  }
+
+  Future<Map<String, dynamic>> proxyStatus() {
+    return getJson('/proxy/status');
+  }
+
+  Future<Map<String, dynamic>> startSession({
+    required String mode,
+    String? locationLabel,
+  }) {
+    return postJson(
+      '/sessions/start',
+      body: <String, dynamic>{
+        'mode': mode,
+        if (locationLabel != null && locationLabel.trim().isNotEmpty)
+          'location_label': locationLabel.trim(),
+      },
+    );
+  }
+
+  Future<Map<String, dynamic>> stopSession(String sessionId) {
+    return postJson('/sessions/$sessionId/stop');
+  }
+
+  Future<Map<String, dynamic>> createSwingEvent(
+    String sessionId, {
+    String? club,
+    String? shotType,
+    double? targetDistance,
+    String? intentTag,
+    int? holeNumber,
+    String? lie,
+  }) {
+    return postJson(
+      '/events/$sessionId',
+      body: <String, dynamic>{
+        if (club != null && club.trim().isNotEmpty) 'club': club.trim(),
+        if (shotType != null && shotType.trim().isNotEmpty)
+          'shot_type': shotType.trim(),
+        if (targetDistance != null) 'target_distance': targetDistance,
+        if (intentTag != null && intentTag.trim().isNotEmpty)
+          'intent_tag': intentTag.trim(),
+        if (holeNumber != null) 'hole_number': holeNumber,
+        if (lie != null && lie.trim().isNotEmpty) 'lie': lie.trim(),
+      },
+    );
+  }
+
   Future<Map<String, dynamic>> getJson(String path) async {
     final response = await _client.get(Uri.parse('$baseUrl$path'));
     return _decodeResponse(response);
