@@ -60,6 +60,8 @@ class WifiNetwork {
       capabilities.contains('SAE');
 
   String get band => frequency >= 4900 ? '5 GHz' : '2.4 GHz';
+  bool get isEthernetTarget => capabilities == 'ETHERNET';
+  String get transportLabel => isEthernetTarget ? 'Controller bridge' : band;
 
   factory WifiNetwork.fromPlatform(Map<Object?, Object?> json) {
     return WifiNetwork(

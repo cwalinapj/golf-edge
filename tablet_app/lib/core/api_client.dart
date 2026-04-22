@@ -22,10 +22,14 @@ class ApiClient {
   }
 
   Future<Map<String, dynamic>> scanLaunchMonitors({
-    String stationInterface = 'wlan1',
+    String stationInterface = 'eth1',
+    String subnet = '192.168.2.0/24',
   }) {
-    return getJson(
-        '/proxy/launch-monitor/scan?station_interface=$stationInterface');
+    final query = Uri(queryParameters: <String, String>{
+      'station_interface': stationInterface,
+      'subnet': subnet,
+    }).query;
+    return getJson('/proxy/launch-monitor/scan?$query');
   }
 
   Future<Map<String, dynamic>> wlan0DhcpUp({String interface = 'wlan0'}) {
@@ -64,7 +68,7 @@ class ApiClient {
     required String passphrase,
     required String capabilities,
     required String ownerKey,
-    String stationInterface = 'wlan1',
+    String stationInterface = 'eth1',
     bool keepConnected = true,
   }) {
     return postJson(

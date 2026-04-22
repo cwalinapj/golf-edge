@@ -12,7 +12,7 @@ class RailGolfApp extends StatefulWidget {
 
   static const apiBaseUrl = String.fromEnvironment(
     'RAIL_GOLF_API_BASE_URL',
-    defaultValue: 'http://10.0.2.2:8000',
+    defaultValue: 'http://192.168.4.1:8000',
   );
 
   @override

@@ -134,16 +134,17 @@ class _WifiSetupScreenState extends State<WifiSetupScreen> {
         capabilities: savedBinding.capabilities,
         passphrase: _passphraseController.text,
         ownerKey: user.storageKey,
-        stationInterface: 'wlan1',
+        stationInterface: 'eth1',
         keepConnected: true,
       );
       if (response['connected'] != true) {
         throw ApiClientException(
           response['detail'] as String? ??
-              'Pi could not connect wlan1 to the launch monitor.',
+              'Pi could not reach the launch monitor from the controller bridge.',
         );
       }
-      setState(() => _status = 'Pi connected to ${savedBinding.ssid} on wlan1');
+      setState(() =>
+          _status = 'Pi found ${savedBinding.ssid} from the controller bridge');
     } catch (error) {
       setState(() => _status = _friendlyError(error));
     } finally {
@@ -158,7 +159,7 @@ class _WifiSetupScreenState extends State<WifiSetupScreen> {
         ApiClient(
           baseUrl: const String.fromEnvironment(
             'RAIL_GOLF_API_BASE_URL',
-            defaultValue: 'http://10.0.2.2:8000',
+            defaultValue: 'http://192.168.4.1:8000',
           ),
         );
   }
@@ -284,7 +285,11 @@ class _NetworkList extends StatelessWidget {
                   selected: active,
                   selectedTileColor: Colors.lightGreen.withValues(alpha: 0.12),
                   leading: Icon(
-                    network.secured ? Icons.wifi_lock : Icons.wifi,
+                    network.isEthernetTarget
+                        ? Icons.settings_ethernet
+                        : network.secured
+                            ? Icons.wifi_lock
+                            : Icons.wifi,
                     color: active ? Colors.lightGreenAccent : null,
                   ),
                   title: Text(
@@ -292,8 +297,10 @@ class _NetworkList extends StatelessWidget {
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                   ),
-                  subtitle: Text('${network.band}  ${network.bssid}'),
-                  trailing: Text('${network.level} dBm'),
+                  subtitle: Text('${network.transportLabel}  ${network.bssid}'),
+                  trailing: network.isEthernetTarget
+                      ? const Icon(Icons.lan)
+                      : Text('${network.level} dBm'),
                   onTap: () => onSelected(network),
                 );
               },
@@ -349,34 +356,36 @@ class _BindingPanel extends StatelessWidget {
                   _FieldRow(label: 'BSSID', value: savedBinding!.bssid),
                   const SizedBox(height: 8),
                 ],
-                _FieldRow(label: 'SSID', value: selected?.ssid ?? 'none'),
-                _FieldRow(label: 'BSSID', value: selected?.bssid ?? 'none'),
+                _FieldRow(label: 'Target', value: selected?.ssid ?? 'none'),
+                _FieldRow(label: 'Address', value: selected?.bssid ?? 'none'),
                 _FieldRow(
-                  label: 'Security',
+                  label: 'Transport',
                   value: selected?.capabilities ?? 'none',
                 ),
                 const SizedBox(height: 18),
-                TextField(
-                  controller: passphraseController,
-                  obscureText: !showPassphrase,
-                  decoration: InputDecoration(
-                    labelText: 'Passphrase',
-                    prefixIcon: const Icon(Icons.key),
-                    suffixIcon: IconButton(
-                      tooltip: showPassphrase
-                          ? 'Hide passphrase'
-                          : 'Show passphrase',
-                      onPressed: onTogglePassphrase,
-                      icon: Icon(
-                        showPassphrase
-                            ? Icons.visibility_off_outlined
-                            : Icons.visibility_outlined,
+                if (selected?.isEthernetTarget != true) ...[
+                  TextField(
+                    controller: passphraseController,
+                    obscureText: !showPassphrase,
+                    decoration: InputDecoration(
+                      labelText: 'Passphrase',
+                      prefixIcon: const Icon(Icons.key),
+                      suffixIcon: IconButton(
+                        tooltip: showPassphrase
+                            ? 'Hide passphrase'
+                            : 'Show passphrase',
+                        onPressed: onTogglePassphrase,
+                        icon: Icon(
+                          showPassphrase
+                              ? Icons.visibility_off_outlined
+                              : Icons.visibility_outlined,
+                        ),
                       ),
+                      border: const OutlineInputBorder(),
                     ),
-                    border: const OutlineInputBorder(),
                   ),
-                ),
-                const SizedBox(height: 18),
+                  const SizedBox(height: 18),
+                ],
                 if (status != null)
                   Padding(
                     padding: const EdgeInsets.only(bottom: 12),
