@@ -52,6 +52,7 @@ def bind_launch_monitor(payload: LaunchMonitorBindingRequest):
         ssid=payload.ssid,
         bssid=payload.bssid,
         passphrase=payload.passphrase,
+        station_mac=payload.station_mac,
         station_interface=payload.station_interface,
         keep_connected=payload.keep_connected,
     )

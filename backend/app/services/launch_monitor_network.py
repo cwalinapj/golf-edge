@@ -83,6 +83,7 @@ class LaunchMonitorNetworkManager:
         ssid: str,
         bssid: str,
         passphrase: str,
+        station_mac: str | None,
         station_interface: str,
         keep_connected: bool,
     ) -> LaunchMonitorNetworkResult:
@@ -101,6 +102,8 @@ class LaunchMonitorNetworkManager:
             "passphrase": passphrase,
             "keep_connected": keep_connected,
         }
+        if station_mac:
+            payload["station_mac"] = station_mac
         try:
             response = httpx.post(
                 f"{self.control_url}/wifi/bind",

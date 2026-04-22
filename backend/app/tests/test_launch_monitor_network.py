@@ -9,6 +9,7 @@ def test_scan_delegates_to_esp32_control_api(monkeypatch):
         assert timeout == 30.0
         return httpx.Response(
             200,
+            request=httpx.Request("GET", url),
             json={
                 "networks": [
                     {
@@ -37,9 +38,11 @@ def test_bind_reports_wrong_passcode_from_esp32(monkeypatch):
     def fake_post(url, json, timeout):
         assert url == "http://esp32.local/wifi/bind"
         assert json["ssid"] == "FS M2-041799"
+        assert json["station_mac"] == "02:11:22:33:44:55"
         assert timeout == 60.0
         return httpx.Response(
             200,
+            request=httpx.Request("POST", url),
             json={"connected": False, "detail": "Wrong passcode please try again."},
         )
 
@@ -49,6 +52,7 @@ def test_bind_reports_wrong_passcode_from_esp32(monkeypatch):
         ssid="FS M2-041799",
         bssid="AA:BB:CC:DD:EE:FF",
         passphrase="bad-passcode",
+        station_mac="02:11:22:33:44:55",
         station_interface="eth1",
         keep_connected=True,
     )

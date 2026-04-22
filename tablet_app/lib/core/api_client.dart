@@ -68,6 +68,7 @@ class ApiClient {
     required String passphrase,
     required String capabilities,
     required String ownerKey,
+    String? stationMac,
     String stationInterface = 'eth1',
     bool keepConnected = true,
   }) {
@@ -79,6 +80,8 @@ class ApiClient {
         'passphrase': passphrase,
         'capabilities': capabilities,
         'owner_key': ownerKey,
+        if (stationMac != null && stationMac.isNotEmpty)
+          'station_mac': stationMac,
         'station_interface': stationInterface,
         'keep_connected': keepConnected,
       },
