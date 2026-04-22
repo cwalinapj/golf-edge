@@ -62,6 +62,8 @@ class ProxyStatus {
     required this.mevoConnected,
     required this.clientConnected,
     required this.packetsSeen,
+    this.openPorts = const [],
+    this.mevoIp,
     this.detail,
   });
 
@@ -71,6 +73,10 @@ class ProxyStatus {
       mevoConnected: json['mevo_connected'] as bool? ?? false,
       clientConnected: json['client_connected'] as bool? ?? false,
       packetsSeen: json['packets_seen'] as int? ?? 0,
+      openPorts: (json['open_ports'] as List<dynamic>? ?? const [])
+          .whereType<int>()
+          .toList(),
+      mevoIp: json['mevo_ip'] as String?,
       detail: json['detail'] as String?,
     );
   }
@@ -79,5 +85,7 @@ class ProxyStatus {
   final bool mevoConnected;
   final bool clientConnected;
   final int packetsSeen;
+  final List<int> openPorts;
+  final String? mevoIp;
   final String? detail;
 }

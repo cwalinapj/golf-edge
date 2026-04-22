@@ -23,6 +23,42 @@ class ApiClient {
     return getJson('/proxy/status');
   }
 
+  Future<Map<String, dynamic>> startProxy({
+    String? runtimeSsid,
+    String? runtimePassword,
+    String? runtimeBssid,
+    int? runtimeChannel,
+  }) {
+    return postJson(
+      '/proxy/start',
+      body: <String, dynamic>{
+        if (runtimeSsid != null && runtimeSsid.isNotEmpty)
+          'runtime_ssid': runtimeSsid,
+        if (runtimePassword != null && runtimePassword.isNotEmpty)
+          'runtime_password': runtimePassword,
+        if (runtimeBssid != null && runtimeBssid.isNotEmpty)
+          'runtime_bssid': runtimeBssid,
+        if (runtimeChannel != null) 'runtime_channel': runtimeChannel,
+      },
+    );
+  }
+
+  Future<Map<String, dynamic>> stopProxy() {
+    return postJson('/proxy/stop');
+  }
+
+  Future<Map<String, dynamic>> proxyLogs() {
+    return getJson('/proxy/logs');
+  }
+
+  Future<Map<String, dynamic>> proxyConnections() {
+    return getJson('/proxy/connections');
+  }
+
+  Future<Map<String, dynamic>> mevoInfo() {
+    return getJson('/proxy/mevo');
+  }
+
   Future<Map<String, dynamic>> scanLaunchMonitors({
     String stationInterface = 'eth1',
   }) {
