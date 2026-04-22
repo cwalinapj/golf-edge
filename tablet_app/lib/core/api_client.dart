@@ -28,36 +28,6 @@ class ApiClient {
         '/proxy/launch-monitor/scan?station_interface=$stationInterface');
   }
 
-  Future<Map<String, dynamic>> openSetupAp({
-    String ssid = 'railgolf',
-    String password = 'password',
-    String interface = 'wlan0',
-  }) {
-    return postJson(
-      '/admin/setup-ap/open',
-      body: <String, dynamic>{
-        'ssid': ssid,
-        'password': password,
-        'interface': interface,
-      },
-    );
-  }
-
-  Future<Map<String, dynamic>> closeSetupAp({
-    String ssid = 'railgolf',
-    String password = 'password',
-    String interface = 'wlan0',
-  }) {
-    return postJson(
-      '/admin/setup-ap/close',
-      body: <String, dynamic>{
-        'ssid': ssid,
-        'password': password,
-        'interface': interface,
-      },
-    );
-  }
-
   Future<Map<String, dynamic>> wlan0DhcpUp({String interface = 'wlan0'}) {
     return postJson(
       '/admin/wlan0/dhcp-up',

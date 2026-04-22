@@ -1,13 +1,6 @@
 from pydantic import BaseModel
 
 
-class SetupApRequest(BaseModel):
-    interface: str = "wlan1"
-    ssid: str = "railgolf"
-    password: str = "password"
-    connection_name: str = "railgolf-control-ap"
-
-
 class NetworkModeResponse(BaseModel):
     status: str
     detail: str

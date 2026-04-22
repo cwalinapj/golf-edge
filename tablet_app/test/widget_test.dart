@@ -40,7 +40,6 @@ void main() {
       find.text('Please login with your web 3.0 wallet or as a guest.'),
       findsOneWidget,
     );
-    expect(find.byTooltip('Configuration'), findsOneWidget);
     expect(find.text('Login as guest'), findsOneWidget);
   });
 
