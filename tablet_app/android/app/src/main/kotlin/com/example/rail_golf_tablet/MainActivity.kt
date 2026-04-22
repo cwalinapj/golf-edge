@@ -7,8 +7,13 @@ import android.content.Intent
 import android.content.IntentFilter
 import android.content.pm.PackageManager
 import android.location.LocationManager
+import android.net.ConnectivityManager
+import android.net.Network
+import android.net.NetworkCapabilities
+import android.net.NetworkRequest
 import android.net.wifi.ScanResult
 import android.net.wifi.WifiManager
+import android.net.wifi.WifiNetworkSpecifier
 import android.os.Build
 import android.os.Bundle
 import android.os.Handler
@@ -20,11 +25,13 @@ import io.flutter.plugin.common.MethodChannel
 
 class MainActivity : FlutterActivity() {
     private val channelName = "rail_golf/wifi_scan"
+    private val adminWifiChannelName = "rail_golf/admin_wifi"
     private val permissionRequestCode = 4401
     private val handler = Handler(Looper.getMainLooper())
 
     private var pendingScanResult: MethodChannel.Result? = null
     private var scanReceiver: BroadcastReceiver? = null
+    private var setupApCallback: ConnectivityManager.NetworkCallback? = null
 
     override fun configureFlutterEngine(flutterEngine: FlutterEngine) {
         super.configureFlutterEngine(flutterEngine)
@@ -36,6 +43,14 @@ class MainActivity : FlutterActivity() {
                     else -> result.notImplemented()
                 }
             }
+
+        MethodChannel(flutterEngine.dartExecutor.binaryMessenger, adminWifiChannelName)
+            .setMethodCallHandler { call, result ->
+                when (call.method) {
+                    "connectSetupAp" -> connectSetupAp(call, result)
+                    else -> result.notImplemented()
+                }
+            }
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -44,6 +59,7 @@ class MainActivity : FlutterActivity() {
 
     override fun onDestroy() {
         unregisterScanReceiver()
+        releaseSetupAp()
         pendingScanResult = null
         super.onDestroy()
     }
@@ -183,6 +199,67 @@ class MainActivity : FlutterActivity() {
         return capabilities.contains("WEP") ||
             capabilities.contains("WPA") ||
             capabilities.contains("SAE")
+    }
+
+    private fun connectSetupAp(call: MethodCall, result: MethodChannel.Result) {
+        val ssid = call.argument<String>("ssid").orEmpty().ifBlank { "railgolf" }
+        val password = call.argument<String>("password").orEmpty().ifBlank { "password" }
+        if (password.length < 8) {
+            result.error("setup_ap_invalid", "Setup AP password must be at least 8 characters", null)
+            return
+        }
+
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.Q) {
+            result.error(
+                "setup_ap_unsupported",
+                "Automatic setup AP connection requires Android 10 or newer",
+                null
+            )
+            return
+        }
+
+        releaseSetupAp()
+        val connectivityManager =
+            applicationContext.getSystemService(Context.CONNECTIVITY_SERVICE) as ConnectivityManager
+        val specifier = WifiNetworkSpecifier.Builder()
+            .setSsid(ssid)
+            .setWpa2Passphrase(password)
+            .build()
+        val request = NetworkRequest.Builder()
+            .addTransportType(NetworkCapabilities.TRANSPORT_WIFI)
+            .setNetworkSpecifier(specifier)
+            .build()
+
+        val callback = object : ConnectivityManager.NetworkCallback() {
+            override fun onAvailable(network: Network) {
+                handler.post {
+                    connectivityManager.bindProcessToNetwork(network)
+                    result.success(null)
+                }
+            }
+
+            override fun onUnavailable() {
+                handler.post {
+                    releaseSetupAp()
+                    result.error(
+                        "setup_ap_unavailable",
+                        "Could not connect to the Rail Golf setup AP",
+                        null
+                    )
+                }
+            }
+        }
+        setupApCallback = callback
+        connectivityManager.requestNetwork(request, callback, 30_000)
+    }
+
+    private fun releaseSetupAp() {
+        val connectivityManager =
+            applicationContext.getSystemService(Context.CONNECTIVITY_SERVICE) as ConnectivityManager
+        connectivityManager.bindProcessToNetwork(null)
+        val callback = setupApCallback ?: return
+        runCatching { connectivityManager.unregisterNetworkCallback(callback) }
+        setupApCallback = null
     }
 
     private fun requiredPermissions(): Array<String> {
