@@ -127,14 +127,33 @@ Flutter UI talks to this through a small platform-channel facade.
 Suggested native packages:
 
 - `accessibility/service/`
-- `accessibility/nodes/`
-- `accessibility/actions/`
-- `accessibility/recipes/`
-- `accessibility/verify/`
+- `accessibility/executor/`
+- `accessibility/matcher/`
+- `accessibility/reader/`
+- `accessibility/model/`
 
 Suggested Flutter facade:
 
 - `lib/core/accessibility/`
+
+Target core split:
+
+```text
+core-accessibility/
+  service/
+  executor/
+  matcher/
+  reader/
+  model/
+```
+
+Responsibilities:
+
+- `service/`: Android `AccessibilityService` lifecycle and permission state.
+- `executor/`: guarded click, scroll, back, launch app, and action execution.
+- `matcher/`: find nodes by text, resource ID, class, bounds, and screen rules.
+- `reader/`: screen snapshots, visible text extraction, current screen state.
+- `model/`: accessibility DTOs shared with recipes and FS Golf control.
 
 ### core-pi-api
 
@@ -277,21 +296,13 @@ app
  └─ core-accessibility + core-pi-api
 ```
 
-Internally, use this direction only:
+Internally, these are the allowed dependency edges:
 
 ```text
-app
-  -> feature-*
-  -> core-data
-  -> core-pi-api / core-accessibility facade / core-database
-  -> core-network / core-model / core-common
-
-feature-* -> core-ui
-feature-* -> core-model
-core-pi-api -> core-network
-core-data -> core-pi-api
-core-data -> core-accessibility facade
-core-data -> core-database
+feature-* -> core-data, core-model, core-ui
+core-data -> core-pi-api, core-accessibility, core-database, core-model
+core-pi-api -> core-network, core-model
+core-accessibility -> core-model, core-common
 ```
 
 Forbidden dependencies:
