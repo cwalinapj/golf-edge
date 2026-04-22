@@ -25,6 +25,25 @@ module names describe ownership boundaries. In the current single Flutter
 package, mirror them as folders under `lib/` and native packages under
 `android/app/src/main/kotlin/`.
 
+## First Version Scope
+
+Do not build all modules on day one. Start with the smallest useful vertical
+slice:
+
+- `app`
+- `feature-dashboard`
+- `feature-proxy`
+- `feature-fsgolf-control`
+- `core-accessibility`
+- `core-pi-api`
+- `core-model`
+
+Then add:
+
+- `feature-recipes`
+- `feature-logs`
+- `core-database`
+
 ### app
 
 The application shell.
@@ -177,6 +196,23 @@ Current seed:
 Target folder:
 
 - `lib/core/pi_api/`
+
+Target core split:
+
+```text
+core-pi-api/
+  api/
+  dto/
+  repository/
+  websocket/
+```
+
+Responsibilities:
+
+- `api/`: typed REST endpoint client definitions.
+- `dto/`: wire-format request/response objects for the Pi API.
+- `repository/`: Pi-facing repository implementations used by `core-data`.
+- `websocket/`: live status/log stream client.
 
 ### core-model
 
